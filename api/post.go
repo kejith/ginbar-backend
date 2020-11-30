@@ -4,20 +4,26 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
-	"strconv"
-	"path/filepath"
 	"ginbar/api/utils"
+	"net/http"
+	"path/filepath"
+	"strconv"
+
+	"ginbar/api/models"
+	"ginbar/mysql/db"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
-	"ginbar/api/models"
-	"ginbar/mysql/db"
 )
 
 // PostsHandler struct defines the Dependencies that will be used
 type PostsHandler struct {
 	db *sql.DB
+}
+
+type postVoteForm struct {
+	PostID    int32 `form:"post_id"`
+	VoteState int32 `form:"vote_state"`
 }
 
 // NewPostsHandler constructor
@@ -50,7 +56,7 @@ func (server *Server) GetAll(context *gin.Context) {
 	// IF userID == 0 the client is not logged in so we send Posts without
 	// voting information
 	// ELSE sending Posts data with voting information
-	if userID == 0 { 
+	if userID == 0 {
 		posts, err = models.GetPosts(server.store, context)
 	} else {
 		posts, err = models.GetVotedPosts(server.store, context, userID)
@@ -116,10 +122,9 @@ func (server *Server) Get(context *gin.Context) {
 			context.Status(http.StatusInternalServerError)
 			return
 		}
-		
+
 		p := models.PostJSON{}
 		p.PopulateVoted(post)
-		
 
 		commentParams := db.GetVotedCommentsParams{
 			UserID: userID,
@@ -127,7 +132,6 @@ func (server *Server) Get(context *gin.Context) {
 		}
 		p.Comments, err = server.store.GetVotedComments(context, commentParams)
 
-		fmt.Println(p.Comments)
 		if err != nil {
 			context.Error(err)
 			context.Status(http.StatusInternalServerError)
@@ -146,7 +150,6 @@ func (server *Server) CreatePost(context *gin.Context) {
 	//var post *db.Post = &db.Post{}
 	var err error
 
-
 	var form postForm
 
 	// context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -163,8 +166,7 @@ func (server *Server) CreatePost(context *gin.Context) {
 		return
 	}
 
-
-	fileName, err := utils.ProcessUploadedImage(form.URL);
+	fileName, err := utils.ProcessUploadedImage(form.URL)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -196,6 +198,51 @@ func (server *Server) CreatePost(context *gin.Context) {
 	// everything worked fine so we send a Status code 204
 	// TODO implement Status 201
 	context.Status(http.StatusNoContent)
+}
+
+// VotePost updates voting information
+func (server *Server) VotePost(context *gin.Context) {
+	// Read Data from Form
+	var form postVoteForm
+	err := context.ShouldBind(&form)
+	if err != nil {
+		context.Status(http.StatusInternalServerError)
+		context.Error(err)
+		return
+	}
+
+	// read userID from session
+	session := sessions.Default(context)
+	userID, ok := session.Get("userid").(int32)
+	if !ok {
+		context.Status(http.StatusInternalServerError)
+		return
+	}
+
+	if form.VoteState != 0 {
+		params := db.UpsertPostVoteParams{
+			UserID:  userID,
+			PostID:  form.PostID,
+			Upvoted: form.VoteState,
+		}
+
+		err = server.store.UpsertPostVote(context, params)
+	} else {
+		params := db.DeletePostVoteParams{
+			UserID: userID,
+			PostID: form.PostID,
+		}
+
+		err = server.store.DeletePostVote(context, params)
+	}
+
+	if err != nil {
+		context.Status(http.StatusInternalServerError)
+		context.Error(err)
+		return
+	}
+
+	context.Status(http.StatusOK)
 
 }
 

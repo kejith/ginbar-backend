@@ -10,6 +10,7 @@ CREATE TABLE posts (
   /* body */  
   url TEXT NOT NULL,
   image VARCHAR(255) NOT NULL,
+  score int NOT NULL DEFAULT 0,
 
   /* foreign key*/
   user_name VARCHAR(255) NOT NULL

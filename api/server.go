@@ -3,11 +3,12 @@ package api
 import (
 	"net/http"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/contrib/static"
-	"github.com/gin-gonic/contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"ginbar/mysql/db"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-gonic/contrib/static"
+	"github.com/gin-gonic/gin"
 )
 
 // Server serves HTTP requests and Stores Connections, Sessions and State
@@ -26,11 +27,11 @@ func NewServer(store db.Store) *Server {
 
 	// Create and configurate the Router
 	server.router = gin.Default()
-	
+
 	// CORS
 	// TODO: maybe not needed, needs to be tested
 	server.router.Use(cors.Default())
-	
+
 	// Create and Store a store for Sessions
 	server.sessions = sessions.NewCookieStore([]byte(secret))
 	server.router.Use(sessions.Sessions("gbsession", server.sessions))
@@ -45,6 +46,7 @@ func NewServer(store db.Store) *Server {
 		groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
 		groupPost.POST("/create", server.CreatePost)
+		groupPost.POST("/vote", server.VotePost)
 	}
 
 	// API/USER

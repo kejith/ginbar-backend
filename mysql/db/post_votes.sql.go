@@ -26,13 +26,16 @@ func (q *Queries) CreatePostVote(ctx context.Context, arg CreatePostVoteParams) 
 }
 
 const deletePostVote = `-- name: DeletePostVote :exec
-UPDATE post_votes
-SET deleted_at = NOW()
-WHERE id =
+DELETE FROM post_votes WHERE user_id = ? AND post_id = ?
 `
 
-func (q *Queries) DeletePostVote(ctx context.Context, id int32) error {
-	_, err := q.db.ExecContext(ctx, deletePostVote, id)
+type DeletePostVoteParams struct {
+	UserID int32 `json:"user_id"`
+	PostID int32 `json:"post_id"`
+}
+
+func (q *Queries) DeletePostVote(ctx context.Context, arg DeletePostVoteParams) error {
+	_, err := q.db.ExecContext(ctx, deletePostVote, arg.UserID, arg.PostID)
 	return err
 }
 
@@ -49,5 +52,23 @@ type UpdatePostVoteParams struct {
 
 func (q *Queries) UpdatePostVote(ctx context.Context, arg UpdatePostVoteParams) error {
 	_, err := q.db.ExecContext(ctx, updatePostVote, arg.Upvoted, arg.ID)
+	return err
+}
+
+const upsertPostVote = `-- name: UpsertPostVote :exec
+REPLACE INTO 
+    post_votes(user_id, post_id, upvoted)
+VALUE 
+    (?, ?, ?)
+`
+
+type UpsertPostVoteParams struct {
+	UserID  int32 `json:"user_id"`
+	PostID  int32 `json:"post_id"`
+	Upvoted int32 `json:"upvoted"`
+}
+
+func (q *Queries) UpsertPostVote(ctx context.Context, arg UpsertPostVoteParams) error {
+	_, err := q.db.ExecContext(ctx, upsertPostVote, arg.UserID, arg.PostID, arg.Upvoted)
 	return err
 }

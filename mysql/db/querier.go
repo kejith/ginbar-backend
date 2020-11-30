@@ -15,7 +15,7 @@ type Querier interface {
 	DeleteComment(ctx context.Context, id int32) error
 	DeleteCommentVote(ctx context.Context, arg DeleteCommentVoteParams) error
 	DeletePost(ctx context.Context, id int32) error
-	DeletePostVote(ctx context.Context, id int32) error
+	DeletePostVote(ctx context.Context, arg DeletePostVoteParams) error
 	DeleteUser(ctx context.Context, id int32) error
 	GetComment(ctx context.Context, id int32) (Comment, error)
 	GetComments(ctx context.Context) ([]Comment, error)
@@ -35,6 +35,7 @@ type Querier interface {
 	UpdatePostVote(ctx context.Context, arg UpdatePostVoteParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpsertCommentVote(ctx context.Context, arg UpsertCommentVoteParams) error
+	UpsertPostVote(ctx context.Context, arg UpsertPostVoteParams) error
 }
 
 var _ Querier = (*Queries)(nil)

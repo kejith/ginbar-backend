@@ -41,7 +41,7 @@ func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 
 const getPost = `-- name: GetPost :one
 SELECT
-	id, created_at, updated_at, deleted_at, url, image, user_name 
+	id, created_at, updated_at, deleted_at, url, image, score, user_name 
 FROM
 	posts 
 WHERE
@@ -59,6 +59,7 @@ func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 		&i.DeletedAt,
 		&i.Url,
 		&i.Image,
+		&i.Score,
 		&i.UserName,
 	)
 	return i, err
@@ -66,7 +67,7 @@ func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 
 const getPosts = `-- name: GetPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, image, user_name 
+	id, created_at, updated_at, deleted_at, url, image, score, user_name 
 FROM
 	posts 
 WHERE
@@ -91,6 +92,7 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 			&i.DeletedAt,
 			&i.Url,
 			&i.Image,
+			&i.Score,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -108,7 +110,7 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 
 const getPostsByUser = `-- name: GetPostsByUser :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, image, user_name 
+	id, created_at, updated_at, deleted_at, url, image, score, user_name 
 FROM
 	posts 
 WHERE
@@ -132,6 +134,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, 
 			&i.DeletedAt,
 			&i.Url,
 			&i.Image,
+			&i.Score,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -149,7 +152,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, 
 
 const getVotedPost = `-- name: GetVotedPost :one
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.image, p.user_name, 
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.image, p.score, p.user_name, 
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -172,6 +175,7 @@ type GetVotedPostRow struct {
 	DeletedAt sql.NullTime `json:"deleted_at"`
 	Url       string       `json:"url"`
 	Image     string       `json:"image"`
+	Score     int32        `json:"score"`
 	UserName  string       `json:"user_name"`
 	Upvoted   interface{}  `json:"upvoted"`
 }
@@ -186,6 +190,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 		&i.DeletedAt,
 		&i.Url,
 		&i.Image,
+		&i.Score,
 		&i.UserName,
 		&i.Upvoted,
 	)
@@ -194,7 +199,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 
 const getVotedPosts = `-- name: GetVotedPosts :many
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.image, p.user_name,
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.image, p.score, p.user_name,
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -210,6 +215,7 @@ type GetVotedPostsRow struct {
 	DeletedAt sql.NullTime `json:"deleted_at"`
 	Url       string       `json:"url"`
 	Image     string       `json:"image"`
+	Score     int32        `json:"score"`
 	UserName  string       `json:"user_name"`
 	Upvoted   interface{}  `json:"upvoted"`
 }
@@ -230,6 +236,7 @@ func (q *Queries) GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPo
 			&i.DeletedAt,
 			&i.Url,
 			&i.Image,
+			&i.Score,
 			&i.UserName,
 			&i.Upvoted,
 		); err != nil {

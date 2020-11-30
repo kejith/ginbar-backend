@@ -35,6 +35,7 @@ type Post struct {
 	DeletedAt sql.NullTime `json:"deleted_at"`
 	Url       string       `json:"url"`
 	Image     string       `json:"image"`
+	Score     int32        `json:"score"`
 	UserName  string       `json:"user_name"`
 }
 
