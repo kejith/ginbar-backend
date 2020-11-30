@@ -2,14 +2,14 @@ package api
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/gin-gonic/contrib/sessions"
-	"github.com/gin-gonic/gin"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
+
+	"github.com/gin-gonic/contrib/sessions"
+	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -214,6 +214,7 @@ func (server *Server) Me(context *gin.Context) {
 
 		// TODO: maybe send more informative Information
 		// remove sensible Data
+		_ = user
 
 		// context.JSON(http.StatusOK, gin.H{
 		// 	"status": http.StatusOK,
