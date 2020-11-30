@@ -13,6 +13,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+// --------------------
+// FORMS
+// --------------------
+
 type userRegisterForm struct {
 	Name     string `form:"name"`
 	Email    string `form:"email"`
@@ -26,7 +30,7 @@ type userLoginForm struct {
 
 // GetUsers retrieves a user with a given id or username from the database
 func (server *Server) GetUsers(context *gin.Context) {
-
+	// TODO: Abstract Database Result Struct into a custom JSON Model
 	user, err := server.store.GetUsers(context)
 	if err != nil {
 		context.Error(err)
@@ -46,7 +50,10 @@ func (server *Server) GetUser(context *gin.Context) {
 	userName := context.Param("id")
 	userID, _ := strconv.ParseInt(context.Param("id"), 10, 64)
 
+	// If UserID != 0 we use this to get the User
+	// Else we try to use the Username instead
 	if userID != 0 {
+		// TODO: Abstract Database Result Struct into a custom JSON Model
 		user, err := server.store.GetUser(context, int32(userID))
 		if err != nil {
 			context.Error(err)
@@ -59,6 +66,7 @@ func (server *Server) GetUser(context *gin.Context) {
 			"data":   user,
 		})
 	} else {
+		// TODO: Abstract Database Result Struct into a custom JSON Model
 		user, err := server.store.GetUserByName(context, userName)
 		if err != nil {
 			context.Error(err)
@@ -76,6 +84,7 @@ func (server *Server) GetUser(context *gin.Context) {
 
 // GetUserByName retrieves a user with a given id from the database
 func (server *Server) GetUserByName(context *gin.Context) {
+	// TODO GetUserByName Should get a User by Name not ID
 	userID, err := strconv.ParseInt(context.Param("id"), 10, 64)
 	if err != nil {
 		context.Error(err)
@@ -92,6 +101,7 @@ func (server *Server) GetUserByName(context *gin.Context) {
 
 // CreateUser saves a user to the database
 func (server *Server) CreateUser(context *gin.Context) {
+	// Read POST Data and write it into registerForm
 	var registerForm userRegisterForm
 	err := context.ShouldBind(&registerForm)
 	if err != nil {
@@ -100,11 +110,11 @@ func (server *Server) CreateUser(context *gin.Context) {
 		return
 	}
 
+	// Hash Password
 	hash, err := utils.CreatePasswordHash([]byte(registerForm.Password))
 	if err != nil {
 		context.Status(http.StatusInternalServerError)
 		context.Error(err)
-		fmt.Println(err)
 		return
 	}
 
@@ -120,6 +130,7 @@ func (server *Server) CreateUser(context *gin.Context) {
 		return
 	}
 
+	// Insert User
 	err = server.store.CreateUser(context, createParams)
 	if err != nil {
 		context.Status(http.StatusInternalServerError)
@@ -133,7 +144,7 @@ func (server *Server) CreateUser(context *gin.Context) {
 // Login handles a request from the client to login a user and create
 // a jwt token which is set in the Cookie
 func (server *Server) Login(context *gin.Context) {
-
+	// Read POST data and write it into userLoginForm
 	var form userLoginForm
 	err := context.ShouldBind(&form)
 	if err != nil {
@@ -142,6 +153,7 @@ func (server *Server) Login(context *gin.Context) {
 		return
 	}
 
+	// find user with Given Name
 	user, err := server.store.GetUserByName(context, form.Name)
 	if err != nil {
 		context.Status(http.StatusInternalServerError)
@@ -149,7 +161,7 @@ func (server *Server) Login(context *gin.Context) {
 		return
 	}
 
-	fmt.Println(user.Password, form.Password)
+	// Compare Passwords
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password))
 	if err != nil {
 		context.Status(http.StatusInternalServerError)
@@ -157,11 +169,13 @@ func (server *Server) Login(context *gin.Context) {
 		return
 	}
 
+	// Compare given Username with Username from Database
 	if user.Name != form.Name {
 		context.Status(http.StatusInternalServerError)
 		return
 	}
 
+	// Write Session Information
 	session := sessions.Default(context)
 	session.Set("user", user.Name)
 	session.Set("userid", user.ID)
@@ -184,8 +198,9 @@ func (server *Server) Logout(context *gin.Context) {
 	session.Save()
 }
 
-// Me returns Data of the current logged in User
+// Me returns the Data of the currently logged in User
 func (server *Server) Me(context *gin.Context) {
+	// Read Session Information
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
 
@@ -197,10 +212,13 @@ func (server *Server) Me(context *gin.Context) {
 			return
 		}
 
-		context.JSON(http.StatusOK, gin.H{
-			"status": http.StatusOK,
-			"data":   user,
-		})
+		// TODO: maybe send more informative Information
+		// remove sensible Data
+
+		// context.JSON(http.StatusOK, gin.H{
+		// 	"status": http.StatusOK,
+		// 	"data":   user,
+		// })
 
 		context.JSON(http.StatusOK, gin.H{"message": "User authenticated", "data": userName})
 	} else {

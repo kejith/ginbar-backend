@@ -31,7 +31,8 @@ type postForm struct {
 
 var _posts []db.Post = nil
 
-// GetAll retrives all users from the database
+// GetAll retrives all users from the database and returns these users as
+// JSON Data
 func (server *Server) GetAll(context *gin.Context) {
 	// read data from session
 	session := sessions.Default(context)
@@ -40,13 +41,16 @@ func (server *Server) GetAll(context *gin.Context) {
 	if res := session.Get("userid"); res != nil {
 		userID = res.(int32)
 	}
-	userID = 6
 
-	context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	// TODO: check if CORS is needed
+	//context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 
 	var posts []models.PostJSON
 	var err error
-	if userID == 0 {
+	// IF userID == 0 the client is not logged in so we send Posts without
+	// voting information
+	// ELSE sending Posts data with voting information
+	if userID == 0 { 
 		posts, err = models.GetPosts(server.store, context)
 	} else {
 		posts, err = models.GetVotedPosts(server.store, context, userID)
@@ -57,6 +61,9 @@ func (server *Server) GetAll(context *gin.Context) {
 		context.Status(http.StatusInternalServerError)
 		return
 	}
+
+	// TODO: remove struct. Not needed anymore but we have to change
+	// frontend code too
 	type PostsResult struct {
 		Posts []models.PostJSON `json:"posts"`
 	}
@@ -142,10 +149,11 @@ func (server *Server) CreatePost(context *gin.Context) {
 
 	var form postForm
 
-	context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	context.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-	context.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+	// context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+	// context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+	// context.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+	// context.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
+
 	// Set Status Codes 500 for failed service, if we get to the end
 	// completly Status Code 204 will be set
 	context.Status(http.StatusInternalServerError)

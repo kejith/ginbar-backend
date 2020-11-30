@@ -10,7 +10,7 @@ import (
 	"ginbar/mysql/db"
 )
 
-// Server serves HTTP requests
+// Server serves HTTP requests and Stores Connections, Sessions and State
 type Server struct {
 	store    db.Store
 	router   *gin.Engine
@@ -20,24 +20,34 @@ type Server struct {
 // NewServer creates a new HTTP server and sets up routing.
 func NewServer(store db.Store) *Server {
 	var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
-	server := &Server{store: store}
-	server.router = gin.Default()
-	server.router.Use(cors.Default())
 
+	// create a Store
+	server := &Server{store: store}
+
+	// Create and configurate the Router
+	server.router = gin.Default()
+	
+	// CORS
+	// TODO: maybe not needed, needs to be tested
+	server.router.Use(cors.Default())
+	
+	// Create and Store a store for Sessions
 	server.sessions = sessions.NewCookieStore([]byte(secret))
 	server.router.Use(sessions.Sessions("gbsession", server.sessions))
-	//router.Use(static.Serve("/", static.LocalFile("./public", true)))
 
+	// API
 	groupAPI := server.router.Group("/api")
+
+	// APi/POST
 	groupPost := groupAPI.Group("/post")
 	{
 		groupPost.GET("/", server.GetAll)
 		groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
-		//groupPost.POST("/:post_id/comments/create", server.CreateComment)
 		groupPost.POST("/create", server.CreatePost)
 	}
 
+	// API/USER
 	groupUser := groupAPI.Group("/user")
 	{
 		groupUser.GET("/", server.GetUsers)
@@ -47,26 +57,28 @@ func NewServer(store db.Store) *Server {
 		groupUser.POST("/logout", server.Logout)
 	}
 
+	// API/COMMENT
 	groupComments := groupAPI.Group("/comment")
 	{
-		//groupComments.GET("/", comments.ShowAll)
-		//groupComments.GET("/:id", comments.Get)
 		groupComments.POST("/create", server.CreateComment)
 		groupComments.POST("/vote", server.VoteComment)
 	}
 
+	// API/CHECK
 	groupCheck := groupAPI.Group("/check")
 	groupCheck.Use(AuthRequired)
 	{
 		groupCheck.GET("/me", server.Me)
 	}
 
+	// Serve static files from ./public/
 	server.router.Use(static.Serve("/", static.LocalFile("./public", true)))
 
 	return server
 }
 
-// AuthRequired ...
+// AuthRequired checks if the current Session is valid and the User is
+// authenticated
 func AuthRequired(c *gin.Context) {
 	session := sessions.Default(c)
 	user := session.Get("user")

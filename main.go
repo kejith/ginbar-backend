@@ -31,11 +31,12 @@ var dbConfig DatabaseConfig
 var dbConnection *sql.DB
 
 func init() {
-	fmt.Println("init")
+	// Load Configs from .env File
 	if err := godotenv.Load(); err != nil {
 		panic(err)
 	}
 
+	// Database Config
 	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
 		panic(err)
@@ -50,6 +51,7 @@ func init() {
 		DatabaseName: os.Getenv("DB_NAME"),
 	}
 
+	// Create DSN String for Opening a Connection to the Database
 	dsn := fmt.Sprintf(
 		"%s:%s@/%s?parseTime=true",
 		dbConfig.User,
@@ -57,6 +59,7 @@ func init() {
 		dbConfig.DatabaseName,
 	)
 
+	// Open and Store Connection to the Database
 	dbConnection, err = sql.Open(dbConfig.Driver, dsn)
 	if err != nil {
 		log.Fatal("Can't connect to mysql", err)
@@ -64,9 +67,18 @@ func init() {
 }
 
 func main() {
+	/*
+	* Stors is used for all kind of Database related functions
+	*/
 	store := db.NewStore(dbConnection)
+
+	/*
+	* Server handles Incoming HTTP Requests, Store the State of the Server
+	* and Connections
+	*/
 	server := api.NewServer(store)
 
+	// Start Server
 	err := server.Start(":8080")
 	if err != nil {
 		log.Fatal("Can't start server", err)
