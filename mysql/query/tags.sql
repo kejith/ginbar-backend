@@ -7,8 +7,9 @@ SELECT * FROM tags WHERE tags.id = ? LIMIT 1;
 /* name: GetTagByName :one */
 SELECT * FROM tags WHERE tags.name = ? LIMIT 1;
 
-/* name: CreateTag :exec */
-INSERT INTO tags (name) VALUES (?);
+/* name: CreateTag :execresult */
+INSERT INTO tags (name) VALUES (?)
+ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id);
 
 /* name: DeleteTag :exec */
 DELETE FROM tags WHERE tags.id = ?;   

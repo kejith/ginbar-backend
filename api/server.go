@@ -66,6 +66,12 @@ func NewServer(store db.Store) *Server {
 		groupComments.POST("/vote", server.VoteComment)
 	}
 
+	groupTags := groupAPI.Group("/tag")
+	{
+		groupTags.POST("/create", server.CreatePostTag)
+		groupTags.POST("/vote", server.VotePostTag)
+	}
+
 	// API/CHECK
 	groupCheck := groupAPI.Group("/check")
 	groupCheck.Use(AuthRequired)

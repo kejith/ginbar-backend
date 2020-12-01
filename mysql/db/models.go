@@ -44,6 +44,14 @@ type PostTag struct {
 	Score  int32 `json:"score"`
 	TagID  int32 `json:"tag_id"`
 	PostID int32 `json:"post_id"`
+	UserID int32 `json:"user_id"`
+}
+
+type PostTagVote struct {
+	ID        int32 `json:"id"`
+	UserID    int32 `json:"user_id"`
+	PostTagID int32 `json:"post_tag_id"`
+	Upvoted   int32 `json:"upvoted"`
 }
 
 type PostVote struct {

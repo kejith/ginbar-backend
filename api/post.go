@@ -138,7 +138,21 @@ func (server *Server) Get(context *gin.Context) {
 			return
 		}
 
-		p.Tags, err = server.store.GetTagsByPost(context, post.ID)
+		tagsParams := db.GetTagsByPostParams{
+			UserID: userID,
+			PostID: post.ID,
+		}
+
+		tags, err := server.store.GetTagsByPost(context, tagsParams)
+
+		var tagsJSON []models.PostTagJSON
+		for _, tag := range tags {
+			t := models.PostTagJSON{}
+			t.Populate(tag)
+			tagsJSON = append(tagsJSON, t)
+		}
+
+		p.Tags = tagsJSON
 
 		context.JSON(http.StatusOK, gin.H{
 			"status": http.StatusOK,

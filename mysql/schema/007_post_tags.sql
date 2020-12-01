@@ -7,10 +7,12 @@ CREATE TABLE post_tags (
 
   /* foreign keys */
   tag_id INT UNSIGNED NOT NULL,
-  post_id INT UNSIGNED NOT NULL
+  post_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-ALTER TABLE post_votes
-  ADD UNIQUE KEY uidx_post_vote (tag_id, post_id),
+ALTER TABLE post_tags
+  ADD UNIQUE KEY uidx_post_tags (tag_id, post_id),
+  ADD FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
   ADD FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE,
   ADD FOREIGN KEY (post_id) REFERENCES posts(id) ON UPDATE CASCADE ON DELETE CASCADE;

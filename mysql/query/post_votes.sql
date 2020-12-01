@@ -9,9 +9,6 @@ UPDATE post_votes
 SET upvoted = ?
 WHERE id = ?;
 
-
-
-
 /* name: UpsertPostVote :exec */
 REPLACE INTO 
     post_votes(user_id, post_id, upvoted)

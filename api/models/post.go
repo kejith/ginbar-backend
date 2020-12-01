@@ -20,7 +20,7 @@ type PostJSON struct {
 	Upvoted   int8                     `json:"upvoted"`
 	Score     int32                    `json:"score"`
 	Comments  []db.GetVotedCommentsRow `json:"comments"`
-	Tags      []db.GetTagsByPostRow    `json:"tags"`
+	Tags      []PostTagJSON   `json:"tags"`
 }
 
 // PopulateVoteds fills the struct with data from the Database Object

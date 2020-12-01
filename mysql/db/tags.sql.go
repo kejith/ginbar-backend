@@ -5,15 +5,16 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
-const createTag = `-- name: CreateTag :exec
+const createTag = `-- name: CreateTag :execresult
 INSERT INTO tags (name) VALUES (?)
+ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id)
 `
 
-func (q *Queries) CreateTag(ctx context.Context, name string) error {
-	_, err := q.db.ExecContext(ctx, createTag, name)
-	return err
+func (q *Queries) CreateTag(ctx context.Context, name string) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createTag, name)
 }
 
 const deleteTag = `-- name: DeleteTag :exec

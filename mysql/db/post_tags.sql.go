@@ -5,37 +5,48 @@ package db
 
 import (
 	"context"
+	"database/sql"
 )
 
-const addTagToPost = `-- name: AddTagToPost :exec
-INSERT INTO post_tags (tag_id, post_id) VALUES (?, ?)
+const addTagToPost = `-- name: AddTagToPost :execresult
+INSERT INTO post_tags (tag_id, post_id, user_id) VALUES (?, ?, ?)
 `
 
 type AddTagToPostParams struct {
 	TagID  int32 `json:"tag_id"`
 	PostID int32 `json:"post_id"`
+	UserID int32 `json:"user_id"`
 }
 
-func (q *Queries) AddTagToPost(ctx context.Context, arg AddTagToPostParams) error {
-	_, err := q.db.ExecContext(ctx, addTagToPost, arg.TagID, arg.PostID)
-	return err
+func (q *Queries) AddTagToPost(ctx context.Context, arg AddTagToPostParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, addTagToPost, arg.TagID, arg.PostID, arg.UserID)
 }
 
 const getTagsByPost = `-- name: GetTagsByPost :many
-SELECT pt.id, pt.score, t.name FROM post_tags pt 
-LEFT JOIN tags AS t ON pt.tag_id = t.id 
+SELECT pt.id, pt.score, pt.post_id, pt.user_id, t.name, IFNULL(ptv.upvoted, 0) upvoted
+FROM post_tags pt 
+LEFT JOIN tags AS t ON pt.tag_id = t.id
+LEFT JOIN post_tag_votes AS ptv ON ptv.post_tag_id = pt.id AND ptv.user_id = ?
 WHERE pt.post_id = ?
 ORDER BY score DESC
 `
 
-type GetTagsByPostRow struct {
-	ID    int32  `json:"id"`
-	Score int32  `json:"score"`
-	Name  string `json:"name"`
+type GetTagsByPostParams struct {
+	UserID int32 `json:"user_id"`
+	PostID int32 `json:"post_id"`
 }
 
-func (q *Queries) GetTagsByPost(ctx context.Context, postID int32) ([]GetTagsByPostRow, error) {
-	rows, err := q.db.QueryContext(ctx, getTagsByPost, postID)
+type GetTagsByPostRow struct {
+	ID      int32       `json:"id"`
+	Score   int32       `json:"score"`
+	PostID  int32       `json:"post_id"`
+	UserID  int32       `json:"user_id"`
+	Name    string      `json:"name"`
+	Upvoted interface{} `json:"upvoted"`
+}
+
+func (q *Queries) GetTagsByPost(ctx context.Context, arg GetTagsByPostParams) ([]GetTagsByPostRow, error) {
+	rows, err := q.db.QueryContext(ctx, getTagsByPost, arg.UserID, arg.PostID)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +54,14 @@ func (q *Queries) GetTagsByPost(ctx context.Context, postID int32) ([]GetTagsByP
 	items := []GetTagsByPostRow{}
 	for rows.Next() {
 		var i GetTagsByPostRow
-		if err := rows.Scan(&i.ID, &i.Score, &i.Name); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Score,
+			&i.PostID,
+			&i.UserID,
+			&i.Name,
+			&i.Upvoted,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
