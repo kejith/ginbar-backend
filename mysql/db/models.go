@@ -39,6 +39,13 @@ type Post struct {
 	UserName  string       `json:"user_name"`
 }
 
+type PostTag struct {
+	ID     int32 `json:"id"`
+	Score  int32 `json:"score"`
+	TagID  int32 `json:"tag_id"`
+	PostID int32 `json:"post_id"`
+}
+
 type PostVote struct {
 	ID        int32        `json:"id"`
 	CreatedAt time.Time    `json:"created_at"`
@@ -47,6 +54,11 @@ type PostVote struct {
 	Upvoted   int32        `json:"upvoted"`
 	UserID    int32        `json:"user_id"`
 	PostID    int32        `json:"post_id"`
+}
+
+type Tag struct {
+	ID   int32  `json:"id"`
+	Name string `json:"name"`
 }
 
 type User struct {

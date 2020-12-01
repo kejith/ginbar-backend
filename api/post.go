@@ -138,6 +138,8 @@ func (server *Server) Get(context *gin.Context) {
 			return
 		}
 
+		p.Tags, err = server.store.GetTagsByPost(context, post.ID)
+
 		context.JSON(http.StatusOK, gin.H{
 			"status": http.StatusOK,
 			"data":   p,
