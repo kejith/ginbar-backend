@@ -29,15 +29,16 @@ type CommentVote struct {
 }
 
 type Post struct {
-	ID          int32        `json:"id"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   time.Time    `json:"updated_at"`
-	DeletedAt   sql.NullTime `json:"deleted_at"`
-	Url         string       `json:"url"`
-	Filename    string       `json:"filename"`
-	ContentType string       `json:"content_type"`
-	Score       int32        `json:"score"`
-	UserName    string       `json:"user_name"`
+	ID                int32        `json:"id"`
+	CreatedAt         time.Time    `json:"created_at"`
+	UpdatedAt         time.Time    `json:"updated_at"`
+	DeletedAt         sql.NullTime `json:"deleted_at"`
+	Url               string       `json:"url"`
+	Filename          string       `json:"filename"`
+	ThumbnailFilename string       `json:"thumbnail_filename"`
+	ContentType       string       `json:"content_type"`
+	Score             int32        `json:"score"`
+	UserName          string       `json:"user_name"`
 }
 
 type PostTag struct {

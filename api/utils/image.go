@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"path/filepath"
 
 	//"image/gif"
 	"bytes"
@@ -91,7 +92,7 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 }
 
 // ProcessUploadedImage ... TODO
-func ProcessUploadedImage(url string) (fileName string, err error) {
+func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
 	// create Filepaths
 	// cwd, err := os.Getwd()
 	// if err != nil {
@@ -104,29 +105,29 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 	// load image
 	response, err := http.Get(url)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	defer response.Body.Close()
 
 	if response.StatusCode != 200 {
-		return "", errors.New("Received non 200 response code")
+		return "", "", errors.New("Received non 200 response code")
 	}
 
 	img, _, err := image.Decode(response.Body)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	fileName = fmt.Sprintf("%v", time.Now().UnixNano())
+	fileName = fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
 	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
-	imgFile, err := SaveImage(fileName, &img)
+	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), &img)
 	if err != nil {
 		if imgFile != nil {
 			os.Remove(imgFile.Name())
 			imgFile.Close()
 		}
 
-		return "", err
+		return "", "", err
 	}
 	defer imgFile.Close()
 
@@ -135,11 +136,11 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
 
-		return "", err
+		return "", "", err
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(fileName, &imgCropped)
+	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -149,10 +150,10 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
 
-		return "", err
+		return "", "", err
 	}
 
-	return imgFile.Name(), nil
+	return imgFile.Name(), thumbnailFile.Name(), nil
 }
 
 // SaveImage the image to the disk

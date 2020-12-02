@@ -10,18 +10,19 @@ import (
 
 // PostJSON is a struct to map Data from the Database to a reduced JSON object
 type PostJSON struct {
-	ID          int64                    `json:"id"`
-	CreatedAt   time.Time                `json:"created_at"`
-	UpdatedAt   time.Time                `json:"updated_at"`
-	DeletedAt   time.Time                `json:"deleted_at"`
-	URL         string                   `json:"url"`
-	FileName    string                   `json:"filename"`
-	ContentType string                   `json:"content_type"`
-	UserName    string                   `json:"user"`
-	Upvoted     int8                     `json:"upvoted"`
-	Score       int32                    `json:"score"`
-	Comments    []db.GetVotedCommentsRow `json:"comments"`
-	Tags        []PostTagJSON            `json:"tags"`
+	ID                int64                    `json:"id"`
+	CreatedAt         time.Time                `json:"created_at"`
+	UpdatedAt         time.Time                `json:"updated_at"`
+	DeletedAt         time.Time                `json:"deleted_at"`
+	URL               string                   `json:"url"`
+	FileName          string                   `json:"filename"`
+	ThumbnailFilename string                   `json:"thumbnail_filename"`
+	ContentType       string                   `json:"content_type"`
+	UserName          string                   `json:"user"`
+	Upvoted           int8                     `json:"upvoted"`
+	Score             int32                    `json:"score"`
+	Comments          []db.GetVotedCommentsRow `json:"comments"`
+	Tags              []PostTagJSON            `json:"tags"`
 }
 
 // PopulateVoteds fills the struct with data from the Database Object
@@ -35,6 +36,7 @@ func (p *PostJSON) PopulateVoteds(post db.GetVotedPostsRow) {
 	p.ID = int64(post.ID)
 	p.URL = post.Url
 	p.FileName = post.Filename
+	p.ThumbnailFilename = post.ThumbnailFilename
 	p.ContentType = post.ContentType
 	p.UserName = post.UserName
 	p.Score = post.Score
@@ -52,6 +54,7 @@ func (p *PostJSON) PopulateVoted(post db.GetVotedPostRow) {
 	p.ID = int64(post.ID)
 	p.URL = post.Url
 	p.FileName = post.Filename
+	p.ThumbnailFilename = post.ThumbnailFilename
 	p.ContentType = post.ContentType
 	p.UserName = post.UserName
 	p.Upvoted = int8(post.Upvoted.(int64))
@@ -69,6 +72,7 @@ func (p *PostJSON) PopulatePost(post db.Post) {
 	p.ID = int64(post.ID)
 	p.URL = post.Url
 	p.FileName = post.Filename
+	p.ThumbnailFilename = post.ThumbnailFilename
 	p.ContentType = post.ContentType
 	p.UserName = post.UserName
 	p.Score = post.Score

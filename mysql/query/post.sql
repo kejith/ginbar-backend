@@ -29,9 +29,9 @@ ORDER BY posts.id DESC;
 
 /* name: CreatePost :exec */
 INSERT INTO posts 
-    (url, filename, user_name, content_type)
+    (url, filename, thumbnail_filename, user_name, content_type)
 VALUES 
-    (?, ?, ?, ?);
+    (?, ?, ?, ?, ?);
 
 /* name: DeletePost :exec */
 UPDATE posts 

@@ -169,7 +169,16 @@ func (server *Server) Get(context *gin.Context) {
 
 // UploadPost handles uploads from files and creates a post with them
 func (server *Server) UploadPost(context *gin.Context) {
-	// 25 << 20 is 25MB
+	session := sessions.Default(context)
+	userName, ok := session.Get("user").(string)
+
+	if !ok {
+		context.Status(http.StatusInternalServerError)
+		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
+		return
+	}
+
+	// Limit File Size => 25 << 20 is 25MB
 	context.Request.ParseMultipartForm(25 << 20)
 	file, handler, err := context.Request.FormFile("file")
 	if err != nil {
@@ -185,23 +194,14 @@ func (server *Server) UploadPost(context *gin.Context) {
 
 	switch fileType {
 	case "video":
-
-		session := sessions.Default(context)
-		userName, ok := session.Get("user").(string)
-
-		if !ok {
-			context.Status(http.StatusInternalServerError)
-			context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-			return
-		}
-
-		fileName, err := utils.ProcessUploadedVideo(file, fileFormat, server.directories)
+		fileName, thumbnailFilename, err := utils.ProcessUploadedVideo(file, fileFormat, server.directories)
 
 		parameters := db.CreatePostParams{
-			Url:         "",
-			Filename:    fileName,
-			UserName:    userName,
-			ContentType: handler.Header.Get("Content-Type"),
+			Url:               "",
+			Filename:          fileName,
+			ThumbnailFilename: thumbnailFilename,
+			UserName:          userName,
+			ContentType:       handler.Header.Get("Content-Type"),
 		}
 
 		err = server.store.CreatePost(context, parameters)
@@ -237,7 +237,7 @@ func (server *Server) CreatePost(context *gin.Context) {
 		return
 	}
 
-	fileName, err := utils.ProcessUploadedImage(form.URL)
+	fileName, _, err := utils.ProcessUploadedImage(form.URL, server.directories)
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -254,10 +254,11 @@ func (server *Server) CreatePost(context *gin.Context) {
 	}
 
 	parameters := db.CreatePostParams{
-		Url:         form.URL,
-		Filename:    filepath.Base(fileName),
-		UserName:    userName,
-		ContentType: "image",
+		Url:               form.URL,
+		Filename:          filepath.Base(fileName),
+		ThumbnailFilename: filepath.Base(fileName),
+		UserName:          userName,
+		ContentType:       "image",
 	}
 
 	err = server.store.CreatePost(context, parameters)
