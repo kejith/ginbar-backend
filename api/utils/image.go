@@ -57,6 +57,7 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 	return
 }
 
+// ProcessUploadedImage ... TODO
 func ProcessUploadedImage(url string) (fileName string, err error) {
 	// create Filepaths
 	cwd, err := os.Getwd()
