@@ -9,10 +9,11 @@ import (
 	"os"
 	"strconv"
 
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 	"ginbar/api"
 	"ginbar/mysql/db"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
 )
 
 var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
@@ -69,17 +70,20 @@ func init() {
 func main() {
 	/*
 	* Stors is used for all kind of Database related functions
-	*/
+	 */
 	store := db.NewStore(dbConnection)
 
 	/*
 	* Server handles Incoming HTTP Requests, Store the State of the Server
 	* and Connections
-	*/
-	server := api.NewServer(store)
+	 */
+	server, err := api.NewServer(store)
+	if err != nil {
+		log.Fatal("Can't create server", err)
+	}
 
 	// Start Server
-	err := server.Start(":8080")
+	err = server.Start(":8080")
 	if err != nil {
 		log.Fatal("Can't start server", err)
 	}

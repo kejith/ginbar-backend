@@ -2,7 +2,10 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"path/filepath"
 
+	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cors"
@@ -13,27 +16,43 @@ import (
 
 // Server serves HTTP requests and Stores Connections, Sessions and State
 type Server struct {
-	store    db.Store
-	router   *gin.Engine
-	sessions sessions.CookieStore
+	store       db.Store
+	router      *gin.Engine
+	sessions    sessions.CookieStore
+	directories utils.Directories
 }
 
 // NewServer creates a new HTTP server and sets up routing.
-func NewServer(store db.Store) *Server {
+func NewServer(store db.Store) (*Server, error) {
 	var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
+	// setup directory paths
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
 
-	// create a Store
-	server := &Server{store: store}
+	directories := utils.Directories{
+		CWD:       cwd,
+		Image:     filepath.Join(cwd, "public", "images"),
+		Thumbnail: filepath.Join("public", "images", "thumbnails"),
+		Video:     filepath.Join(cwd, "public", "videos"),
+		Tmp:       filepath.Join(cwd, "tmp"),
+	}
 
-	// Create and configurate the Router
-	server.router = gin.Default()
+	// create Server
+	server := &Server{
+		store:       store,
+		router:      gin.Default(),
+		sessions:    sessions.NewCookieStore([]byte(secret)),
+		directories: directories,
+	}
 
-	// CORS
-	// TODO: maybe not needed, needs to be tested
+	//
+	// SETUP SERVER
+	//
+
+	// Middleware
 	server.router.Use(cors.Default())
-
-	// Create and Store a store for Sessions
-	server.sessions = sessions.NewCookieStore([]byte(secret))
 	server.router.Use(sessions.Sessions("gbsession", server.sessions))
 
 	// API
@@ -67,6 +86,7 @@ func NewServer(store db.Store) *Server {
 		groupComments.POST("/vote", server.VoteComment)
 	}
 
+	// API/TAG
 	groupTags := groupAPI.Group("/tag")
 	{
 		groupTags.POST("/create", server.CreatePostTag)
@@ -83,7 +103,7 @@ func NewServer(store db.Store) *Server {
 	// Serve static files from ./public/
 	server.router.Use(static.Serve("/", static.LocalFile("./public", true)))
 
-	return server
+	return server, nil
 }
 
 // AuthRequired checks if the current Session is valid and the User is

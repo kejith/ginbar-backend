@@ -5,16 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"ginbar/api/utils"
-	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"ginbar/api/models"
 	"ginbar/mysql/db"
@@ -174,6 +169,8 @@ func (server *Server) Get(context *gin.Context) {
 
 // UploadPost handles uploads from files and creates a post with them
 func (server *Server) UploadPost(context *gin.Context) {
+	// 25 << 20 is 25MB
+	context.Request.ParseMultipartForm(25 << 20)
 	file, handler, err := context.Request.FormFile("file")
 	if err != nil {
 		fmt.Println("Error Retrieving the File")
@@ -182,68 +179,12 @@ func (server *Server) UploadPost(context *gin.Context) {
 	}
 	defer file.Close()
 
-	mimeHeader := strings.Split(handler.Header.Get("Content-Type"), "/")
-	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
-	fmt.Printf("File Size: %+v\n", handler.Size)
-	fmt.Printf("MIME Header: %+v\n", mimeHeader)
-
-	cwd, err := os.Getwd()
-	if err != nil {
-		context.Error(err)
-		return
-	}
-
-	imageDir := filepath.Join(cwd, "public", "images")
-	thumbnailDir := filepath.Join(imageDir, "thumbnails")
-	videoDir := filepath.Join(cwd, "public", "videos")
-	tmpDir := filepath.Join(cwd, "tmp")
-	_ = thumbnailDir
-
-	fmt.Println(thumbnailDir)
-
-	fileType := mimeHeader[0]
-	fileFormat := mimeHeader[1]
-	time := time.Now().UnixNano()
-	fileName := fmt.Sprintf("%v.%s", time, fileFormat)
-	thumbnailFileName := fmt.Sprintf("%v.%s", time, "png")
+	mimeType := handler.Header.Get("Content-Type")
+	mimeComponents := strings.Split(mimeType, "/")
+	fileType, fileFormat := mimeComponents[0], mimeComponents[1]
 
 	switch fileType {
 	case "video":
-		filePath := filepath.Join(videoDir, fileName)
-
-		localFile, err := os.Create(filePath)
-		if err != nil {
-			context.Error(err)
-			return
-		}
-		defer file.Close()
-
-		_, err = io.Copy(localFile, file)
-		if err != nil {
-
-			context.Error(err)
-			return
-		}
-
-		tmpThumbnailFilePath := filepath.Join(tmpDir, thumbnailFileName)
-		commandArgs := fmt.Sprintf("-i %s -ss 00:00:01.000 -vframes 1 %s -hide_banner -loglevel panic", filePath, tmpThumbnailFilePath)
-		cmd := exec.Command("ffmpeg", strings.Split(commandArgs, " ")...)
-		//cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		err = cmd.Run()
-
-		if err != nil {
-			log.Fatalf("cmd.Run() failed with %s\n", err)
-		}
-
-		fmt.Println(filepath.Join(thumbnailDir, thumbnailFileName))
-		err = utils.CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(thumbnailDir, thumbnailFileName))
-
-		if err != nil {
-			fmt.Println("Thumbnail creation from Temporary file failed")
-			fmt.Println(err)
-			log.Fatalf("Thumbnail creation from Temporary file failed with %s\n", err)
-		}
 
 		session := sessions.Default(context)
 		userName, ok := session.Get("user").(string)
@@ -253,6 +194,8 @@ func (server *Server) UploadPost(context *gin.Context) {
 			context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
 			return
 		}
+
+		fileName, err := utils.ProcessUploadedVideo(file, fileFormat, server.directories)
 
 		parameters := db.CreatePostParams{
 			Url:         "",
@@ -270,21 +213,7 @@ func (server *Server) UploadPost(context *gin.Context) {
 		// everything worked fine so we send a Status code 204
 		// TODO implement Status 201
 		context.Status(http.StatusNoContent)
-
 	}
-
-	// Create file
-	//dst, err := os.Create()
-
-	/*
-		// The file cannot be received.
-		if err != nil {
-			context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-				"message": "File could not be received",
-			})
-			return
-		}
-	*/
 }
 
 // CreatePost inserts a user into the database
