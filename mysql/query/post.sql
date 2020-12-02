@@ -6,7 +6,7 @@ FROM
 WHERE
 	deleted_at IS NULL 
 ORDER BY
-	id;
+	posts.id DESC;
 
 /* name: GetPost :one */
 SELECT
@@ -24,7 +24,8 @@ FROM
 	posts 
 WHERE
 	user_name = ? 
-	AND deleted_at IS NULL;
+	AND deleted_at IS NULL
+ORDER BY posts.id DESC;
 
 /* name: CreatePost :exec */
 INSERT INTO posts 
@@ -46,7 +47,8 @@ FROM
 	posts p
 	LEFT JOIN ( SELECT * FROM post_votes WHERE user_id = ? ) AS pv ON pv.post_id = p.id 
 WHERE
-	p.deleted_at IS NULL;
+	p.deleted_at IS NULL
+ORDER BY p.id DESC;
 
 /* name: GetVotedPost :one */
 SELECT

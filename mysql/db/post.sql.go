@@ -73,7 +73,7 @@ FROM
 WHERE
 	deleted_at IS NULL 
 ORDER BY
-	id
+	posts.id DESC
 `
 
 func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
@@ -116,6 +116,7 @@ FROM
 WHERE
 	user_name = ? 
 	AND deleted_at IS NULL
+ORDER BY posts.id DESC
 `
 
 func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, error) {
@@ -206,6 +207,7 @@ FROM
 	LEFT JOIN ( SELECT id, created_at, updated_at, deleted_at, upvoted, user_id, post_id FROM post_votes WHERE user_id = ? ) AS pv ON pv.post_id = p.id 
 WHERE
 	p.deleted_at IS NULL
+ORDER BY p.id DESC
 `
 
 type GetVotedPostsRow struct {

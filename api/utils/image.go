@@ -4,14 +4,17 @@ import (
 	"errors"
 	"fmt"
 	"image"
+
 	//"image/gif"
-	"image/png"
+	"bytes"
+	"image/jpeg"
 	"net/http"
 	"os"
 	"time"
-    "bytes"
-    //"encoding/base64"
+
+	//"encoding/base64"
 	"path/filepath"
+
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 
@@ -66,7 +69,7 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 
 	// load image
 	response, err := http.Get(url)
-	if  err != nil {
+	if err != nil {
 		return "", err
 	}
 	defer response.Body.Close()
@@ -78,9 +81,8 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 	img, format, err := image.Decode(response.Body)
 	if err != nil {
 		return "", err
-	}	
+	}
 
-	
 	fileName = fmt.Sprintf("%v", time.Now().UnixNano())
 	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
 	imgFile, err := SaveImage(imageDir, fileName, format, &img)
@@ -90,7 +92,6 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 			imgFile.Close()
 		}
 
-		
 		return "", err
 	}
 	defer imgFile.Close()
@@ -103,7 +104,7 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 		return "", err
 	}
 
-	//imgFileName := fmt.Sprintf("%v.%s", , format) 
+	//imgFileName := fmt.Sprintf("%v.%s", , format)
 	thumbnailFile, err := SaveImage(thumbnailDir, fileName, format, &imgCropped)
 	if err != nil {
 		if thumbnailFile != nil {
@@ -114,10 +115,8 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
 
-		
 		return "", err
 	}
-
 
 	return imgFile.Name(), nil
 }
@@ -128,28 +127,24 @@ func SaveImage(cwd, name, format string, image *image.Image) (file *os.File, err
 	// Schedule cleanup
 	defer imagick.Terminate()
 	mw := imagick.NewMagickWand()
-	
+
 	fileName := fmt.Sprintf("%s.%s", name, "png")
 	filePath := filepath.Join(cwd, fileName)
 
 	file, err = os.Create(filePath)
-	if  err != nil {
-		return nil, err
-	}
-
-	encoder := &png.Encoder{
-		CompressionLevel: -3,
-	}
-	
-	var buff bytes.Buffer
-
-	err = encoder.Encode(&buff, *image)
 	if err != nil {
 		return nil, err
 	}
-	
+
+	var buff bytes.Buffer
+
+	err = jpeg.Encode(&buff, *image, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	fmt.Println("Imagick")
-	err = mw.ReadImageBlob(buff.Bytes())		
+	err = mw.ReadImageBlob(buff.Bytes())
 	if err != nil {
 		return nil, err
 	}
