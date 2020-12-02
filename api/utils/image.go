@@ -8,12 +8,12 @@ import (
 	//"image/gif"
 	"bytes"
 	"image/jpeg"
+	"image/png"
 	"net/http"
 	"os"
 	"time"
 
 	//"encoding/base64"
-	"path/filepath"
 
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
@@ -40,6 +40,39 @@ func GetCropDimensions(img *image.Image, width, height int) (int, int) {
 	return width, height
 }
 
+// CreateThumbnailFromFile Reads and inputFilePath Image from the Disk and Creates a Thumbnail
+// in the outputFilePath
+func CreateThumbnailFromFile(inputFilePath string, outputfilePath string) (err error) {
+	inputFile, err := os.Open(inputFilePath)
+	if err != nil {
+		return err
+	}
+	defer inputFile.Close()
+
+	img, err := png.Decode(inputFile)
+	if err != nil {
+		return err
+	}
+
+	imgCropped, err := CropImage(&img, 250, 250)
+	if err != nil {
+		return err
+	}
+
+	//imgFileName := fmt.Sprintf("%v.%s", , format)
+	thumbnailFile, err := SaveImage(outputfilePath, &imgCropped)
+	if err != nil {
+		if thumbnailFile != nil {
+			os.Remove(thumbnailFile.Name())
+			thumbnailFile.Close()
+		}
+
+		return err
+	}
+
+	return nil
+}
+
 // DownloadImage downloads the image and decodes it
 func DownloadImage(url string) (img image.Image, format string, err error) {
 	response, err := http.Get(url)
@@ -60,13 +93,13 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 // ProcessUploadedImage ... TODO
 func ProcessUploadedImage(url string) (fileName string, err error) {
 	// create Filepaths
-	cwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
+	// cwd, err := os.Getwd()
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	imageDir := filepath.Join(cwd, "public", "images")
-	thumbnailDir := filepath.Join(imageDir, "thumbnails")
+	//imageDir := filepath.Join(cwd, "public", "images")
+	//thumbnailDir := filepath.Join(imageDir, "thumbnails")
 
 	// load image
 	response, err := http.Get(url)
@@ -79,14 +112,14 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 		return "", errors.New("Received non 200 response code")
 	}
 
-	img, format, err := image.Decode(response.Body)
+	img, _, err := image.Decode(response.Body)
 	if err != nil {
 		return "", err
 	}
 
 	fileName = fmt.Sprintf("%v", time.Now().UnixNano())
 	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
-	imgFile, err := SaveImage(imageDir, fileName, format, &img)
+	imgFile, err := SaveImage(fileName, &img)
 	if err != nil {
 		if imgFile != nil {
 			os.Remove(imgFile.Name())
@@ -106,7 +139,7 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(thumbnailDir, fileName, format, &imgCropped)
+	thumbnailFile, err := SaveImage(fileName, &imgCropped)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -123,14 +156,19 @@ func ProcessUploadedImage(url string) (fileName string, err error) {
 }
 
 // SaveImage the image to the disk
-func SaveImage(cwd, name, format string, image *image.Image) (file *os.File, err error) {
+func SaveImage(name string, image *image.Image) (file *os.File, err error) {
+	// cwd, err := os.Getwd()
+	// if err != nil {
+	// 	return nil, err
+	// }
+
 	imagick.Initialize()
 	// Schedule cleanup
 	defer imagick.Terminate()
 	mw := imagick.NewMagickWand()
 
-	fileName := fmt.Sprintf("%s.%s", name, "png")
-	filePath := filepath.Join(cwd, fileName)
+	//fileName := filepath.Base(name)
+	filePath := name
 
 	file, err = os.Create(filePath)
 	if err != nil {

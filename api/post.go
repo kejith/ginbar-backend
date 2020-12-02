@@ -5,9 +5,16 @@ import (
 	"errors"
 	"fmt"
 	"ginbar/api/utils"
+	"io"
+	"log"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"time"
 
 	"ginbar/api/models"
 	"ginbar/mysql/db"
@@ -24,6 +31,10 @@ type PostsHandler struct {
 type postVoteForm struct {
 	PostID    int32 `form:"post_id"`
 	VoteState int32 `form:"vote_state"`
+}
+
+type FileUploadForm struct {
+	fileData *multipart.FileHeader `form:"file_data" binding:"required"`
 }
 
 // NewPostsHandler constructor
@@ -161,6 +172,121 @@ func (server *Server) Get(context *gin.Context) {
 	}
 }
 
+// UploadPost handles uploads from files and creates a post with them
+func (server *Server) UploadPost(context *gin.Context) {
+	file, handler, err := context.Request.FormFile("file")
+	if err != nil {
+		fmt.Println("Error Retrieving the File")
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+
+	mimeHeader := strings.Split(handler.Header.Get("Content-Type"), "/")
+	fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+	fmt.Printf("File Size: %+v\n", handler.Size)
+	fmt.Printf("MIME Header: %+v\n", mimeHeader)
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		context.Error(err)
+		return
+	}
+
+	imageDir := filepath.Join(cwd, "public", "images")
+	thumbnailDir := filepath.Join(imageDir, "thumbnails")
+	videoDir := filepath.Join(cwd, "public", "videos")
+	tmpDir := filepath.Join(cwd, "tmp")
+	_ = thumbnailDir
+
+	fmt.Println(thumbnailDir)
+
+	fileType := mimeHeader[0]
+	fileFormat := mimeHeader[1]
+	time := time.Now().UnixNano()
+	fileName := fmt.Sprintf("%v.%s", time, fileFormat)
+	thumbnailFileName := fmt.Sprintf("%v.%s", time, "png")
+
+	switch fileType {
+	case "video":
+		filePath := filepath.Join(videoDir, fileName)
+
+		localFile, err := os.Create(filePath)
+		if err != nil {
+			context.Error(err)
+			return
+		}
+		defer file.Close()
+
+		_, err = io.Copy(localFile, file)
+		if err != nil {
+
+			context.Error(err)
+			return
+		}
+
+		tmpThumbnailFilePath := filepath.Join(tmpDir, thumbnailFileName)
+		commandArgs := fmt.Sprintf("-i %s -ss 00:00:01.000 -vframes 1 %s -hide_banner -loglevel panic", filePath, tmpThumbnailFilePath)
+		cmd := exec.Command("ffmpeg", strings.Split(commandArgs, " ")...)
+		//cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err = cmd.Run()
+
+		if err != nil {
+			log.Fatalf("cmd.Run() failed with %s\n", err)
+		}
+
+		fmt.Println(filepath.Join(thumbnailDir, thumbnailFileName))
+		err = utils.CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(thumbnailDir, thumbnailFileName))
+
+		if err != nil {
+			fmt.Println("Thumbnail creation from Temporary file failed")
+			fmt.Println(err)
+			log.Fatalf("Thumbnail creation from Temporary file failed with %s\n", err)
+		}
+
+		session := sessions.Default(context)
+		userName, ok := session.Get("user").(string)
+
+		if !ok {
+			context.Status(http.StatusInternalServerError)
+			context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
+			return
+		}
+
+		parameters := db.CreatePostParams{
+			Url:         "",
+			Filename:    fileName,
+			UserName:    userName,
+			ContentType: handler.Header.Get("Content-Type"),
+		}
+
+		err = server.store.CreatePost(context, parameters)
+		if err != nil {
+			context.Error(err)
+			return
+		}
+
+		// everything worked fine so we send a Status code 204
+		// TODO implement Status 201
+		context.Status(http.StatusNoContent)
+
+	}
+
+	// Create file
+	//dst, err := os.Create()
+
+	/*
+		// The file cannot be received.
+		if err != nil {
+			context.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+				"message": "File could not be received",
+			})
+			return
+		}
+	*/
+}
+
 // CreatePost inserts a user into the database
 func (server *Server) CreatePost(context *gin.Context) {
 	//var post *db.Post = &db.Post{}
@@ -189,10 +315,9 @@ func (server *Server) CreatePost(context *gin.Context) {
 	}
 
 	// read data from session
-	//session := sessions.Default(context)
-	//userName, ok := session.Get("user").(string)
+	session := sessions.Default(context)
+	userName, ok := session.Get("user").(string)
 
-	userName, ok := "kejith", true
 	if !ok {
 		context.Status(http.StatusInternalServerError)
 		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
@@ -200,9 +325,10 @@ func (server *Server) CreatePost(context *gin.Context) {
 	}
 
 	parameters := db.CreatePostParams{
-		Url:      form.URL,
-		Image:    filepath.Base(fileName),
-		UserName: userName,
+		Url:         form.URL,
+		Filename:    filepath.Base(fileName),
+		UserName:    userName,
+		ContentType: "image",
 	}
 
 	err = server.store.CreatePost(context, parameters)

@@ -9,7 +9,8 @@ CREATE TABLE posts (
 
   /* body */  
   url TEXT NOT NULL,
-  image VARCHAR(255) NOT NULL,
+  filename VARCHAR(255) NOT NULL,
+  content_type VARCHAR(255) NOT NULL,
   score int NOT NULL DEFAULT 0,
 
   /* foreign key*/

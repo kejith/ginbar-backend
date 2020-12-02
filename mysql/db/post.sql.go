@@ -11,19 +11,25 @@ import (
 
 const createPost = `-- name: CreatePost :exec
 INSERT INTO posts 
-    (url, image, user_name)
+    (url, filename, user_name, content_type)
 VALUES 
-    (?, ?, ?)
+    (?, ?, ?, ?)
 `
 
 type CreatePostParams struct {
-	Url      string `json:"url"`
-	Image    string `json:"image"`
-	UserName string `json:"user_name"`
+	Url         string `json:"url"`
+	Filename    string `json:"filename"`
+	UserName    string `json:"user_name"`
+	ContentType string `json:"content_type"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
-	_, err := q.db.ExecContext(ctx, createPost, arg.Url, arg.Image, arg.UserName)
+	_, err := q.db.ExecContext(ctx, createPost,
+		arg.Url,
+		arg.Filename,
+		arg.UserName,
+		arg.ContentType,
+	)
 	return err
 }
 
@@ -41,7 +47,7 @@ func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 
 const getPost = `-- name: GetPost :one
 SELECT
-	id, created_at, updated_at, deleted_at, url, image, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, content_type, score, user_name 
 FROM
 	posts 
 WHERE
@@ -58,7 +64,8 @@ func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Url,
-		&i.Image,
+		&i.Filename,
+		&i.ContentType,
 		&i.Score,
 		&i.UserName,
 	)
@@ -67,7 +74,7 @@ func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 
 const getPosts = `-- name: GetPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, image, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, content_type, score, user_name 
 FROM
 	posts 
 WHERE
@@ -91,7 +98,8 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
-			&i.Image,
+			&i.Filename,
+			&i.ContentType,
 			&i.Score,
 			&i.UserName,
 		); err != nil {
@@ -110,7 +118,7 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 
 const getPostsByUser = `-- name: GetPostsByUser :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, image, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, content_type, score, user_name 
 FROM
 	posts 
 WHERE
@@ -134,7 +142,8 @@ func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, 
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
-			&i.Image,
+			&i.Filename,
+			&i.ContentType,
 			&i.Score,
 			&i.UserName,
 		); err != nil {
@@ -153,7 +162,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, 
 
 const getVotedPost = `-- name: GetVotedPost :one
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.image, p.score, p.user_name, 
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.content_type, p.score, p.user_name, 
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -170,15 +179,16 @@ type GetVotedPostParams struct {
 }
 
 type GetVotedPostRow struct {
-	ID        int32        `json:"id"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	DeletedAt sql.NullTime `json:"deleted_at"`
-	Url       string       `json:"url"`
-	Image     string       `json:"image"`
-	Score     int32        `json:"score"`
-	UserName  string       `json:"user_name"`
-	Upvoted   interface{}  `json:"upvoted"`
+	ID          int32        `json:"id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
+	Url         string       `json:"url"`
+	Filename    string       `json:"filename"`
+	ContentType string       `json:"content_type"`
+	Score       int32        `json:"score"`
+	UserName    string       `json:"user_name"`
+	Upvoted     interface{}  `json:"upvoted"`
 }
 
 func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (GetVotedPostRow, error) {
@@ -190,7 +200,8 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Url,
-		&i.Image,
+		&i.Filename,
+		&i.ContentType,
 		&i.Score,
 		&i.UserName,
 		&i.Upvoted,
@@ -200,7 +211,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 
 const getVotedPosts = `-- name: GetVotedPosts :many
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.image, p.score, p.user_name,
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.content_type, p.score, p.user_name,
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -211,15 +222,16 @@ ORDER BY p.id DESC
 `
 
 type GetVotedPostsRow struct {
-	ID        int32        `json:"id"`
-	CreatedAt time.Time    `json:"created_at"`
-	UpdatedAt time.Time    `json:"updated_at"`
-	DeletedAt sql.NullTime `json:"deleted_at"`
-	Url       string       `json:"url"`
-	Image     string       `json:"image"`
-	Score     int32        `json:"score"`
-	UserName  string       `json:"user_name"`
-	Upvoted   interface{}  `json:"upvoted"`
+	ID          int32        `json:"id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   time.Time    `json:"updated_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
+	Url         string       `json:"url"`
+	Filename    string       `json:"filename"`
+	ContentType string       `json:"content_type"`
+	Score       int32        `json:"score"`
+	UserName    string       `json:"user_name"`
+	Upvoted     interface{}  `json:"upvoted"`
 }
 
 func (q *Queries) GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPostsRow, error) {
@@ -237,7 +249,8 @@ func (q *Queries) GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPo
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
-			&i.Image,
+			&i.Filename,
+			&i.ContentType,
 			&i.Score,
 			&i.UserName,
 			&i.Upvoted,

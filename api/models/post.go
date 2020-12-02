@@ -10,17 +10,18 @@ import (
 
 // PostJSON is a struct to map Data from the Database to a reduced JSON object
 type PostJSON struct {
-	ID        int64                    `json:"id"`
-	CreatedAt time.Time                `json:"created_at"`
-	UpdatedAt time.Time                `json:"updated_at"`
-	DeletedAt time.Time                `json:"deleted_at"`
-	URL       string                   `json:"url"`
-	Image     string                   `json:"image"`
-	UserName  string                   `json:"user"`
-	Upvoted   int8                     `json:"upvoted"`
-	Score     int32                    `json:"score"`
-	Comments  []db.GetVotedCommentsRow `json:"comments"`
-	Tags      []PostTagJSON   `json:"tags"`
+	ID          int64                    `json:"id"`
+	CreatedAt   time.Time                `json:"created_at"`
+	UpdatedAt   time.Time                `json:"updated_at"`
+	DeletedAt   time.Time                `json:"deleted_at"`
+	URL         string                   `json:"url"`
+	FileName    string                   `json:"filename"`
+	ContentType string                   `json:"content_type"`
+	UserName    string                   `json:"user"`
+	Upvoted     int8                     `json:"upvoted"`
+	Score       int32                    `json:"score"`
+	Comments    []db.GetVotedCommentsRow `json:"comments"`
+	Tags        []PostTagJSON            `json:"tags"`
 }
 
 // PopulateVoteds fills the struct with data from the Database Object
@@ -33,7 +34,8 @@ func (p *PostJSON) PopulateVoteds(post db.GetVotedPostsRow) {
 	p.UpdatedAt = post.UpdatedAt
 	p.ID = int64(post.ID)
 	p.URL = post.Url
-	p.Image = post.Image
+	p.FileName = post.Filename
+	p.ContentType = post.ContentType
 	p.UserName = post.UserName
 	p.Score = post.Score
 	p.Upvoted = int8(post.Upvoted.(int64))
@@ -49,7 +51,8 @@ func (p *PostJSON) PopulateVoted(post db.GetVotedPostRow) {
 	p.UpdatedAt = post.UpdatedAt
 	p.ID = int64(post.ID)
 	p.URL = post.Url
-	p.Image = post.Image
+	p.FileName = post.Filename
+	p.ContentType = post.ContentType
 	p.UserName = post.UserName
 	p.Upvoted = int8(post.Upvoted.(int64))
 	p.Score = post.Score
@@ -65,7 +68,8 @@ func (p *PostJSON) PopulatePost(post db.Post) {
 	p.UpdatedAt = post.UpdatedAt
 	p.ID = int64(post.ID)
 	p.URL = post.Url
-	p.Image = post.Image
+	p.FileName = post.Filename
+	p.ContentType = post.ContentType
 	p.UserName = post.UserName
 	p.Score = post.Score
 }

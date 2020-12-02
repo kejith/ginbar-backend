@@ -46,6 +46,7 @@ func NewServer(store db.Store) *Server {
 		groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
 		groupPost.POST("/create", server.CreatePost)
+		groupPost.POST("/upload", server.UploadPost)
 		groupPost.POST("/vote", server.VotePost)
 	}
 
