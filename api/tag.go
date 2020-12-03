@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"ginbar/api/models"
 	"ginbar/mysql/db"
 	"net/http"
@@ -39,6 +40,7 @@ func (server *Server) CreatePostTag(context *gin.Context) {
 
 	// Get Session Information
 	session := sessions.Default(context)
+	fmt.Println(session.Get("userid"))
 	userID, ok := session.Get("userid").(int32)
 
 	if !ok {
