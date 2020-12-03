@@ -61,7 +61,7 @@ func CreateThumbnailFromFile(inputFilePath string, outputfilePath string) (err e
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(outputfilePath, &imgCropped)
+	thumbnailFile, err := SaveImage(outputfilePath, &imgCropped, 80)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -120,7 +120,7 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 
 	fileName = fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
 	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
-	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), &img)
+	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), &img, 80)
 	if err != nil {
 		if imgFile != nil {
 			os.Remove(imgFile.Name())
@@ -131,7 +131,7 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 	}
 	defer imgFile.Close()
 
-	imgCropped, err := CropImage(&img, 250, 250)
+	imgCropped, err := CropImage(&img, 150, 150)
 	if err != nil {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
@@ -140,7 +140,7 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped)
+	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 75)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -157,7 +157,7 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 }
 
 // SaveImage the image to the disk
-func SaveImage(name string, image *image.Image) (file *os.File, err error) {
+func SaveImage(name string, image *image.Image, quality int) (file *os.File, err error) {
 	// cwd, err := os.Getwd()
 	// if err != nil {
 	// 	return nil, err

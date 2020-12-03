@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"ginbar/api/models"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
@@ -162,6 +163,9 @@ func (server *Server) Login(context *gin.Context) {
 		return
 	}
 
+	userJSON := models.PublicUserJSON{}
+	userJSON.Populate(user)
+
 	// Compare Passwords
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(form.Password))
 	if err != nil {
@@ -185,12 +189,12 @@ func (server *Server) Login(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"message": "Successfully authenticated user", "data": user.Name})
+	context.JSON(http.StatusOK, userJSON)
 }
 
 // Logout sets the current MaxAge of the Session to -1 so it expires
 // and the user is logged out
-func (server *Server) Logout(context *gin.Context) {
+func (server *Server) UserLogout(context *gin.Context) {
 	fmt.Println("Logout")
 	session := sessions.Default(context)
 	session.Set("user", "")
@@ -216,15 +220,16 @@ func (server *Server) Me(context *gin.Context) {
 
 		// TODO: maybe send more informative Information
 		// remove sensible Data
-		_ = user
+		u := models.PublicUserJSON{}
+		u.Populate(user)
 
 		// context.JSON(http.StatusOK, gin.H{
 		// 	"status": http.StatusOK,
 		// 	"data":   user,
 		// })
 
-		context.JSON(http.StatusOK, gin.H{"message": "User authenticated", "data": userName})
+		context.JSON(http.StatusOK, u)
 	} else {
-		context.JSON(http.StatusOK, gin.H{"message": "User not authenticated", "data": userName})
+		context.Status(http.StatusUnauthorized)
 	}
 }

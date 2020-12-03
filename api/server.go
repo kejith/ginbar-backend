@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
@@ -52,8 +53,17 @@ func NewServer(store db.Store) (*Server, error) {
 	//
 
 	// Middleware
-	server.router.Use(cors.Default())
+	server.router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://kejith.de"},
+		AllowMethods:     []string{"POST", "GET"},
+		AllowHeaders:     []string{"Origin"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
+	//server.router.Use(CORS())
 	server.router.Use(sessions.Sessions("gbsession", server.sessions))
+	//server.router.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".pdf", ".mp4"})))
 
 	// API
 	groupAPI := server.router.Group("/api")
@@ -76,7 +86,7 @@ func NewServer(store db.Store) (*Server, error) {
 		groupUser.GET("/:id", server.GetUser)
 		groupUser.POST("/create", server.CreateUser)
 		groupUser.POST("/login", server.Login)
-		groupUser.POST("/logout", server.Logout)
+		groupUser.POST("/logout", server.UserLogout)
 	}
 
 	// API/COMMENT
@@ -95,7 +105,7 @@ func NewServer(store db.Store) (*Server, error) {
 
 	// API/CHECK
 	groupCheck := groupAPI.Group("/check")
-	groupCheck.Use(AuthRequired)
+	//groupCheck.Use(AuthRequired)
 	{
 		groupCheck.GET("/me", server.Me)
 	}
@@ -117,6 +127,22 @@ func AuthRequired(c *gin.Context) {
 	}
 
 	c.Next()
+}
+
+func CORS() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
+
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }
 
 // Start runs the HTTP server on a specific address.
