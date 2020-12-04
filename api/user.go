@@ -192,7 +192,7 @@ func (server *Server) Login(context *gin.Context) {
 	context.JSON(http.StatusOK, userJSON)
 }
 
-// Logout sets the current MaxAge of the Session to -1 so it expires
+// UserLogout sets the current MaxAge of the Session to -1 so it expires
 // and the user is logged out
 func (server *Server) UserLogout(context *gin.Context) {
 	fmt.Println("Logout")

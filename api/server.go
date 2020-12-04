@@ -129,6 +129,7 @@ func AuthRequired(c *gin.Context) {
 	c.Next()
 }
 
+/*
 func CORS() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -144,6 +145,7 @@ func CORS() gin.HandlerFunc {
 		c.Next()
 	}
 }
+*/
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
