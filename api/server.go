@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"ginbar/api/models"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
@@ -21,6 +22,14 @@ type Server struct {
 	router      *gin.Engine
 	sessions    sessions.CookieStore
 	directories utils.Directories
+	state       State
+}
+
+// State represents memcached State to retrieve data when it didnt change
+type State struct {
+	Posts      *[]models.PostJSON
+	PostLastID int32
+	HasChanged bool
 }
 
 // NewServer creates a new HTTP server and sets up routing.
@@ -43,9 +52,10 @@ func NewServer(store db.Store) (*Server, error) {
 	// create Server
 	server := &Server{
 		store:       store,
-		router:      gin.Default(),
+		router:      gin.New(),
 		sessions:    sessions.NewCookieStore([]byte(secret)),
 		directories: directories,
+		state:       State{PostLastID: 0, HasChanged: true},
 	}
 
 	//
@@ -74,6 +84,8 @@ func NewServer(store db.Store) (*Server, error) {
 
 	// API
 	groupAPI := server.router.Group("/api")
+	groupAPI.Use(gin.Logger())
+	groupAPI.Use(gin.Recovery())
 
 	// APi/POST
 	groupPost := groupAPI.Group("/post")

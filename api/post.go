@@ -135,12 +135,12 @@ func (server *Server) UploadPost(context *gin.Context) {
 // JSON Data
 func (server *Server) GetAll(context *gin.Context) {
 	// read data from session
-	session := sessions.Default(context)
+	// session := sessions.Default(context)
 
-	var userID int32 = 0
-	if res := session.Get("userid"); res != nil {
-		userID = res.(int32)
-	}
+	// var userID int32 = 0
+	// if res := session.Get("userid"); res != nil {
+	// 	userID = res.(int32)
+	// }
 
 	// TODO: check if CORS is needed
 	//context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
@@ -150,11 +150,11 @@ func (server *Server) GetAll(context *gin.Context) {
 	// IF userID == 0 the client is not logged in so we send Posts without
 	// voting information
 	// ELSE sending Posts data with voting information
-	if userID == 0 {
-		posts, err = models.GetPosts(server.store, context)
-	} else {
-		posts, err = models.GetVotedPosts(server.store, context, userID)
-	}
+	// if userID == 0 {
+	posts, err = models.GetPosts(server.store, context)
+	// } else {
+	// 	posts, err = models.GetVotedPosts(server.store, context, userID)
+	// }
 
 	if err != nil {
 		context.Error(err)

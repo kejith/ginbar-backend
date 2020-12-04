@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strconv"
 	"time"
 
 	"ginbar/mysql/db"
@@ -97,7 +98,22 @@ func GetVotedPosts(store db.Store, context *gin.Context, userID int32) ([]PostJS
 
 // GetPosts returns Posts with voting information
 func GetPosts(store db.Store, context *gin.Context) ([]PostJSON, error) {
-	posts, err := store.GetPosts(context)
+	lastIDString, ok := context.GetQuery("last_id")
+	var lastID int32 = 0
+	if ok {
+		i, err := strconv.ParseInt(lastIDString, 10, 32)
+		if err == nil {
+			lastID = int32(i)
+		}
+	}
+
+	var posts []db.Post
+	var err error
+	if lastID != 0 {
+		posts, err = store.GetNextPosts(context, lastID)
+	} else {
+		posts, err = store.GetPosts(context)
+	}
 	if err != nil {
 		return nil, err
 	}

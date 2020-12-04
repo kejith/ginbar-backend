@@ -28,6 +28,7 @@ type Querier interface {
 	GetComments(ctx context.Context) ([]Comment, error)
 	GetCommentsByPost(ctx context.Context, postID int32) ([]Comment, error)
 	GetLatestComment(ctx context.Context, userName string) (Comment, error)
+	GetNextPosts(ctx context.Context, id int32) ([]Post, error)
 	GetPost(ctx context.Context, id int32) (Post, error)
 	GetPosts(ctx context.Context) ([]Post, error)
 	GetPostsByUser(ctx context.Context, userName string) ([]Post, error)

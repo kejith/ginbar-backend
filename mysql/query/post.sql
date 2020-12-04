@@ -6,7 +6,21 @@ FROM
 WHERE
 	deleted_at IS NULL 
 ORDER BY
-	posts.id DESC;
+	posts.id DESC
+LIMIT 150;
+
+/* name: GetNextPosts :many */
+SELECT
+	* 
+FROM
+	posts 
+WHERE
+	deleted_at IS NULL AND
+	posts.id < ?
+ORDER BY
+	posts.id DESC
+LIMIT 150;
+
 
 /* name: GetPost :one */
 SELECT
