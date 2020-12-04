@@ -1,11 +1,9 @@
 package api
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"ginbar/api/utils"
-	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -18,30 +16,120 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// PostsHandler struct defines the Dependencies that will be used
-type PostsHandler struct {
-	db *sql.DB
-}
+// --------------------
+// FORMS
+// --------------------
 
 type postVoteForm struct {
 	PostID    int32 `form:"post_id"`
 	VoteState int32 `form:"vote_state"`
 }
 
-type FileUploadForm struct {
-	fileData *multipart.FileHeader `form:"file_data" binding:"required"`
-}
-
-// NewPostsHandler constructor
-func NewPostsHandler(db *sql.DB) *PostsHandler {
-	return &PostsHandler{db: db}
-}
-
 type postForm struct {
 	URL string `form:"URL" binding:"required"`
 }
 
-var _posts []db.Post = nil
+// --------------------
+// Handlers
+// --------------------
+
+// CreatePost inserts a user into the database
+func (server *Server) CreatePost(context *gin.Context) {
+	var err error
+	var form postForm
+
+	// Set Status Codes 500 for failed service, if we get to the end
+	// completly Status Code 204 will be set
+	context.Status(http.StatusInternalServerError)
+	err = context.ShouldBind(&form)
+	if err != nil {
+		context.Error(err)
+		return
+	}
+
+	fileName, _, err := utils.ProcessUploadedImage(form.URL, server.directories)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// read data from session
+	session := sessions.Default(context)
+	userName, ok := session.Get("user").(string)
+
+	if !ok {
+		context.Status(http.StatusInternalServerError)
+		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
+		return
+	}
+
+	parameters := db.CreatePostParams{
+		Url:               form.URL,
+		Filename:          filepath.Base(fileName),
+		ThumbnailFilename: filepath.Base(fileName),
+		UserName:          userName,
+		ContentType:       "image",
+	}
+
+	err = server.store.CreatePost(context, parameters)
+	if err != nil {
+		context.Error(err)
+		return
+	}
+
+	// everything worked fine so we send a Status code 204
+	// TODO implement Status 201
+	context.Status(http.StatusNoContent)
+}
+
+// UploadPost handles uploads from files and creates a post with them
+func (server *Server) UploadPost(context *gin.Context) {
+	session := sessions.Default(context)
+	userName, ok := session.Get("user").(string)
+
+	if !ok {
+		context.Status(http.StatusInternalServerError)
+		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
+		return
+	}
+
+	// Limit File Size => 25 << 20 is 25MB
+	context.Request.ParseMultipartForm(25 << 20)
+	file, handler, err := context.Request.FormFile("file")
+	if err != nil {
+		fmt.Println("Error Retrieving the File")
+		fmt.Println(err)
+		return
+	}
+	defer file.Close()
+
+	mimeType := handler.Header.Get("Content-Type")
+	mimeComponents := strings.Split(mimeType, "/")
+	fileType, fileFormat := mimeComponents[0], mimeComponents[1]
+
+	switch fileType {
+	case "video":
+		fileName, thumbnailFilename, err := utils.ProcessUploadedVideo(file, fileFormat, server.directories)
+
+		parameters := db.CreatePostParams{
+			Url:               "",
+			Filename:          fileName,
+			ThumbnailFilename: thumbnailFilename,
+			UserName:          userName,
+			ContentType:       handler.Header.Get("Content-Type"),
+		}
+
+		err = server.store.CreatePost(context, parameters)
+		if err != nil {
+			context.Error(err)
+			return
+		}
+
+		// everything worked fine so we send a Status code 204
+		// TODO implement Status 201
+		context.Status(http.StatusNoContent)
+	}
+}
 
 // GetAll retrives all users from the database and returns these users as
 // JSON Data
@@ -183,111 +271,6 @@ func (server *Server) Get(context *gin.Context) {
 	}
 }
 
-// UploadPost handles uploads from files and creates a post with them
-func (server *Server) UploadPost(context *gin.Context) {
-	session := sessions.Default(context)
-	userName, ok := session.Get("user").(string)
-
-	if !ok {
-		context.Status(http.StatusInternalServerError)
-		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-		return
-	}
-
-	// Limit File Size => 25 << 20 is 25MB
-	context.Request.ParseMultipartForm(25 << 20)
-	file, handler, err := context.Request.FormFile("file")
-	if err != nil {
-		fmt.Println("Error Retrieving the File")
-		fmt.Println(err)
-		return
-	}
-	defer file.Close()
-
-	mimeType := handler.Header.Get("Content-Type")
-	mimeComponents := strings.Split(mimeType, "/")
-	fileType, fileFormat := mimeComponents[0], mimeComponents[1]
-
-	switch fileType {
-	case "video":
-		fileName, thumbnailFilename, err := utils.ProcessUploadedVideo(file, fileFormat, server.directories)
-
-		parameters := db.CreatePostParams{
-			Url:               "",
-			Filename:          fileName,
-			ThumbnailFilename: thumbnailFilename,
-			UserName:          userName,
-			ContentType:       handler.Header.Get("Content-Type"),
-		}
-
-		err = server.store.CreatePost(context, parameters)
-		if err != nil {
-			context.Error(err)
-			return
-		}
-
-		// everything worked fine so we send a Status code 204
-		// TODO implement Status 201
-		context.Status(http.StatusNoContent)
-	}
-}
-
-// CreatePost inserts a user into the database
-func (server *Server) CreatePost(context *gin.Context) {
-	//var post *db.Post = &db.Post{}
-	var err error
-
-	var form postForm
-
-	// context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-	// context.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-	// context.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-	// context.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
-
-	// Set Status Codes 500 for failed service, if we get to the end
-	// completly Status Code 204 will be set
-	context.Status(http.StatusInternalServerError)
-	err = context.ShouldBind(&form)
-	if err != nil {
-		context.Error(err)
-		return
-	}
-
-	fileName, _, err := utils.ProcessUploadedImage(form.URL, server.directories)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	// read data from session
-	session := sessions.Default(context)
-	userName, ok := session.Get("user").(string)
-
-	if !ok {
-		context.Status(http.StatusInternalServerError)
-		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-		return
-	}
-
-	parameters := db.CreatePostParams{
-		Url:               form.URL,
-		Filename:          filepath.Base(fileName),
-		ThumbnailFilename: filepath.Base(fileName),
-		UserName:          userName,
-		ContentType:       "image",
-	}
-
-	err = server.store.CreatePost(context, parameters)
-	if err != nil {
-		context.Error(err)
-		return
-	}
-
-	// everything worked fine so we send a Status code 204
-	// TODO implement Status 201
-	context.Status(http.StatusNoContent)
-}
-
 // VotePost updates voting information
 func (server *Server) VotePost(context *gin.Context) {
 	// Read Data from Form
@@ -332,10 +315,4 @@ func (server *Server) VotePost(context *gin.Context) {
 
 	context.Status(http.StatusOK)
 
-}
-
-// PostUpdate updates the data of a user in the database
-func (server *Server) PostUpdate(context *gin.Context) {
-	// TODO: Implement Updates of Posts MAYBE
-	// Should Posts be updated?
 }

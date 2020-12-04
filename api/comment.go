@@ -6,11 +6,16 @@ import (
 	"net/http"
 	"strconv"
 
-	"ginbar/mysql/db"
 	"ginbar/api/models"
+	"ginbar/mysql/db"
+
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
+
+// --------------------
+// FORMS
+// --------------------
 
 type commentWriteForm struct {
 	Content string `form:"content"`
@@ -19,11 +24,12 @@ type commentWriteForm struct {
 
 type commentVoteForm struct {
 	CommentID int32 `form:"comment_id"`
-	VoteState int32 `form:"vote_state"` 
+	VoteState int32 `form:"vote_state"`
 }
 
-// we probably dont need this
-// we populate the posts with comments in the post request
+// --------------------
+// Handlers
+// --------------------
 
 // GetComments retrives all comments from the database
 func (server *Server) GetComments(context *gin.Context) {
@@ -41,59 +47,20 @@ func (server *Server) GetComments(context *gin.Context) {
 
 	//var comments []models.CommentJSON
 	if userID != 0 {
-		// 	// We serve Comments without Vote information when we do not have a User
-		// 	// ID
-		// 	// TODO: If we dont have a User ID we dont want to serve comments at all
-		// 	fmt.Println("Comments without UserID")
-
-		// 	dbComments, err := server.store.GetCommentsByPost(context, int32(postID))
-		// 	if err != nil {
-		// 		fmt.Println(err)
-		// 		context.Error(err)
-		// 		context.Status(http.StatusInternalServerError)
-		// 		return
-		// 	}
-
-		// 	fmt.Println("dbComments length: ", len(dbComments))
-
-		// 	comments := make([]models.CommentJSON, len(dbComments))
-		// 	for i, comment := range dbComments {
-
-		// 		var deletedAt time.Time
-		// 		if comment.DeletedAt.Valid {
-		// 			deletedAt = comment.DeletedAt.Time
-		// 		}
-
-		// 		comments[i] = models.CommentJSON{
-		// 			ID:        int(comment.ID),
-		// 			CreatedAt: comment.CreatedAt,
-		// 			UpdatedAt: comment.UpdatedAt,
-		// 			DeletedAt: deletedAt,
-		// 			Content:   comment.Content,
-		// 			Username:  comment.UserName,
-		// 			Ups:       int(comment.Ups),
-		// 			Downs:     int(comment.Downs),
-		// 		}
-
-		// 	}
-
-		// 	// comments, err = models.GetCommentsByPost(server.store, context, int(postID))
-
-		// } else {
-
 		params := db.GetVotedCommentsParams{
 			PostID: int32(postID),
 			UserID: int32(userID),
 		}
-		// We serve Comments with voting information when we have user information
+
+		// We serve Comments with voting information when
 		comments, err := server.store.GetVotedComments(context, params)
-		//comments, err = models.GetVotedCommentsByPost(server.store, context, params)
 
 		if err != nil {
 			context.Error(err)
 			context.Status(http.StatusInternalServerError)
 			return
 		}
+
 		context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		context.JSON(http.StatusOK, comments)
 		return
@@ -154,7 +121,7 @@ func (server *Server) CreateComment(context *gin.Context) {
 		context.Error(err)
 		return
 	}
-	
+
 	commentJSON := models.CommentJSON{}
 	commentJSON.PopulateComment(comment)
 	context.JSON(http.StatusOK, commentJSON)
@@ -179,23 +146,21 @@ func (server *Server) VoteComment(context *gin.Context) {
 		return
 	}
 
-	fmt.Println(userID)
-
 	if form.VoteState != 0 {
 		params := db.UpsertCommentVoteParams{
-			UserID: userID,
+			UserID:    userID,
 			CommentID: form.CommentID,
-			Upvoted: form.VoteState,
+			Upvoted:   form.VoteState,
 		}
 
-		err = server.store.UpsertCommentVote(context, params);
+		err = server.store.UpsertCommentVote(context, params)
 	} else {
 		params := db.DeleteCommentVoteParams{
-			UserID: userID,
+			UserID:    userID,
 			CommentID: form.CommentID,
 		}
 
-		err = server.store.DeleteCommentVote(context, params);
+		err = server.store.DeleteCommentVote(context, params)
 	}
 
 	if err != nil {
@@ -206,6 +171,7 @@ func (server *Server) VoteComment(context *gin.Context) {
 
 	context.Status(http.StatusOK)
 }
+
 /*
 // GetComment retrieves a post from the database
 func (server *Server) GetComment(context *gin.Context) {
