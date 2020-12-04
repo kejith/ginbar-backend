@@ -48,7 +48,7 @@ func SaveMultipartFile(file multipart.File, name string, format string, director
 
 // CreateVideoThumbnail creates a Thumbnail from a Video File
 func CreateVideoThumbnail(inputFilePath string, name string, dirs Directories) (filename string, err error) {
-	filename = fmt.Sprintf("%s.png", name)
+	filename = fmt.Sprintf("%s.jpeg", name)
 	tmpThumbnailFilePath := filepath.Join(dirs.Tmp, filename)
 	commandArgs := fmt.Sprintf("-i %s -ss 00:00:01.000 -vframes 1 %s -hide_banner -loglevel panic", inputFilePath, tmpThumbnailFilePath)
 	cmd := exec.Command("ffmpeg", strings.Split(commandArgs, " ")...)

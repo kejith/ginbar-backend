@@ -44,6 +44,7 @@ type Querier interface {
 	GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPostsRow, error)
 	RemoveTagFromPost(ctx context.Context) error
 	UpdateCommentVote(ctx context.Context, arg UpdateCommentVoteParams) error
+	UpdatePostFiles(ctx context.Context, arg UpdatePostFilesParams) error
 	UpdatePostVote(ctx context.Context, arg UpdatePostVoteParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpsertCommentVote(ctx context.Context, arg UpsertCommentVoteParams) error

@@ -9,7 +9,6 @@ import (
 	//"image/gif"
 	"bytes"
 	"image/jpeg"
-	"image/png"
 	"net/http"
 	"os"
 	"time"
@@ -50,18 +49,18 @@ func CreateThumbnailFromFile(inputFilePath string, outputfilePath string) (err e
 	}
 	defer inputFile.Close()
 
-	img, err := png.Decode(inputFile)
+	img, err := jpeg.Decode(inputFile)
 	if err != nil {
 		return err
 	}
 
-	imgCropped, err := CropImage(&img, 250, 250)
+	imgCropped, err := CropImage(&img, 150, 150)
 	if err != nil {
 		return err
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(outputfilePath, &imgCropped, 80)
+	thumbnailFile, err := SaveImage(outputfilePath, &imgCropped, 75)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -120,7 +119,7 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 
 	fileName = fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
 	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
-	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), &img, 80)
+	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), &img, 75)
 	if err != nil {
 		if imgFile != nil {
 			os.Remove(imgFile.Name())
@@ -157,7 +156,7 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 }
 
 // SaveImage the image to the disk
-func SaveImage(name string, image *image.Image, quality int) (file *os.File, err error) {
+func SaveImage(name string, image *image.Image, quality uint) (file *os.File, err error) {
 	// cwd, err := os.Getwd()
 	// if err != nil {
 	// 	return nil, err
@@ -183,7 +182,6 @@ func SaveImage(name string, image *image.Image, quality int) (file *os.File, err
 		return nil, err
 	}
 
-	fmt.Println("Imagick")
 	err = mw.ReadImageBlob(buff.Bytes())
 	if err != nil {
 		return nil, err
@@ -193,7 +191,7 @@ func SaveImage(name string, image *image.Image, quality int) (file *os.File, err
 	mw.SetCompression(imagick.COMPRESSION_BZIP)
 	mw.BlurImage(5, 0.05)
 
-	err = mw.SetImageCompressionQuality(85)
+	err = mw.SetImageCompressionQuality(quality)
 	if err != nil {
 		return nil, err
 	}

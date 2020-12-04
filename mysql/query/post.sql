@@ -17,6 +17,15 @@ WHERE
 	posts.id = ? 
 	AND deleted_at IS NULL;
 
+/* name: UpdatePostFiles :exec */
+UPDATE
+	posts
+SET
+	filename = ?,
+	thumbnail_filename = ?
+WHERE
+	id = ?;
+
 /* name: GetPostsByUser :many */
 SELECT
 	* 

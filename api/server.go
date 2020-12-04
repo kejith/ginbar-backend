@@ -65,6 +65,13 @@ func NewServer(store db.Store) (*Server, error) {
 	server.router.Use(sessions.Sessions("gbsession", server.sessions))
 	//server.router.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".pdf", ".mp4"})))
 
+	// UTILS
+	groupUtils := server.router.Group("/utils")
+	{
+		groupUtils.GET("/thumbnails/regenerate", server.RegenerateThumbnails)
+		groupUtils.GET("/reprocess/urls", server.RedownloadAndCompressImages)
+	}
+
 	// API
 	groupAPI := server.router.Group("/api")
 
@@ -114,6 +121,7 @@ func NewServer(store db.Store) (*Server, error) {
 	server.router.Use(static.Serve("/", static.LocalFile("./public", true)))
 
 	return server, nil
+
 }
 
 // AuthRequired checks if the current Session is valid and the User is
@@ -149,6 +157,7 @@ func CORS() gin.HandlerFunc {
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
+	//server.router.RunTLS(":443", "./server.crt", "./server.key")
 	return server.router.Run(address)
 }
 

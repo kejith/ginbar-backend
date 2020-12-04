@@ -276,3 +276,24 @@ func (q *Queries) GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPo
 	}
 	return items, nil
 }
+
+const updatePostFiles = `-- name: UpdatePostFiles :exec
+UPDATE
+	posts
+SET
+	filename = ?,
+	thumbnail_filename = ?
+WHERE
+	id = ?
+`
+
+type UpdatePostFilesParams struct {
+	Filename          string `json:"filename"`
+	ThumbnailFilename string `json:"thumbnail_filename"`
+	ID                int32  `json:"id"`
+}
+
+func (q *Queries) UpdatePostFiles(ctx context.Context, arg UpdatePostFilesParams) error {
+	_, err := q.db.ExecContext(ctx, updatePostFiles, arg.Filename, arg.ThumbnailFilename, arg.ID)
+	return err
+}
