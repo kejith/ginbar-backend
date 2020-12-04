@@ -14,7 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RegenerateThumbnail regenerates all the thumbnails from the images
+// RegenerateThumbnails regenerates all the thumbnails from the images
 // saved in the umage directory
 func (server *Server) RegenerateThumbnails(context *gin.Context) {
 	posts, err := models.GetPosts(server.store, context)
