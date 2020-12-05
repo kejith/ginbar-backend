@@ -2,7 +2,6 @@ package api
 
 import (
 	"fmt"
-	"ginbar/api/models"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 	"io/ioutil"
@@ -17,13 +16,13 @@ import (
 // RegenerateThumbnails regenerates all the thumbnails from the images
 // saved in the umage directory
 func (server *Server) RegenerateThumbnails(context *gin.Context) {
-	posts, err := models.GetPosts(server.store, context)
+	posts, err := server.store.GetAllPosts(context)
 	if err != nil {
 		log.Print(err)
 		return
 	}
 	imageDir := server.directories.Image
-	//thumbDir := server.directories.Thumbnail
+	thumbDir := server.directories.Thumbnail
 	videoDir := server.directories.Video
 
 	imageFiles, err := ioutil.ReadDir(imageDir)
@@ -34,22 +33,22 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 	_ = imageFiles
 
 	//filesInDatabase := make(map[string]int)
-	length := len(*posts)
+	length := len(posts)
 	i := 1
-	for _, post := range *posts {
-		fileName := post.FileName
+	for _, post := range posts {
+		fileName := post.Filename
 
-		if post.ContentType == "video/mp4" {
+		i = i + 1
+		if post.ContentType == "image" {
 			fmt.Println(i, length, filepath.Join(imageDir, fileName))
-			// 	i = i + 1
-			// 	err = utils.CreateThumbnailFromFile(
-			// 		filepath.Join(imageDir, fileName),
-			// 		filepath.Join(thumbDir, fileName))
+			err = utils.CreateThumbnailFromFile(
+				filepath.Join(imageDir, fileName),
+				filepath.Join(thumbDir, fileName))
 
-			// 	if err != nil {
-			// 		fmt.Println(err)
-			// 	}
-			// } else {
+			if err != nil {
+				fmt.Println(err)
+			}
+		} else {
 			videoFilePath := filepath.Join(videoDir, fileName)
 			//fmt.Println(videoFilePath, strings.TrimSuffix(fileName, path.Ext(fileName)))
 			_, err := utils.CreateVideoThumbnail(
@@ -66,21 +65,21 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 
 // RedownloadAndCompressImages ...
 func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
-	posts, err := models.GetPosts(server.store, context)
+	posts, err := server.store.GetAllPosts(context)
 	if err != nil {
 		log.Print(err)
 		return
 	}
 
-	length := len(*posts)
+	length := len(posts)
 	count := 0
-	for _, post := range *posts {
-		url := post.URL
+	for _, post := range posts {
+		url := post.Url
 
 		count = 1 + count
 		fmt.Println(count, length, url)
 
-		if post.ContentType == "image" {
+		if post.ContentType == "image" && url != "" {
 			response, _, fileFormat, err := utils.LoadFileFromURL(url)
 			filename, thumbnailFilename, err := utils.ProcessImageFromURL(
 				response,

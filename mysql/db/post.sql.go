@@ -47,6 +47,47 @@ func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 	return err
 }
 
+const getAllPosts = `-- name: GetAllPosts :many
+SELECT
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 
+FROM
+	posts
+`
+
+func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getAllPosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Post{}
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Url,
+			&i.Filename,
+			&i.ThumbnailFilename,
+			&i.ContentType,
+			&i.Score,
+			&i.UserName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getNextPosts = `-- name: GetNextPosts :many
 SELECT
 	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 

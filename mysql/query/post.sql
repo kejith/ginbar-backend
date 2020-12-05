@@ -21,6 +21,11 @@ ORDER BY
 	posts.id DESC
 LIMIT 150;
 
+/* name: GetAllPosts :many */
+SELECT
+	* 
+FROM
+	posts;
 
 /* name: GetPost :one */
 SELECT

@@ -115,7 +115,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (fileName s
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 75)
+	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 100)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -174,7 +174,7 @@ func SaveImage(name string, image *image.Image, quality uint) (file *os.File, er
 
 	var buff bytes.Buffer
 
-	err = jpeg.Encode(&buff, *image, nil)
+	err = jpeg.Encode(&buff, *image, &jpeg.Options{Quality: 100})
 	if err != nil {
 		return nil, err
 	}
@@ -196,6 +196,7 @@ func SaveImage(name string, image *image.Image, quality uint) (file *os.File, er
 	if err != nil {
 		return nil, err
 	}
+
 	return
 }
 
@@ -205,7 +206,7 @@ func CropImage(imgIn *image.Image, w int, h int) (img image.Image, err error) {
 	width, height := GetCropDimensions(imgIn, w, h)
 	resizer := nfnt.NewDefaultResizer()
 	analyzer := smartcrop.NewAnalyzer(resizer)
-	bestCrop, err := analyzer.FindBestCrop(*imgIn, 240, 240)
+	bestCrop, err := analyzer.FindBestCrop(*imgIn, width, height)
 
 	type subImager interface {
 		SubImage(r image.Rectangle) image.Image

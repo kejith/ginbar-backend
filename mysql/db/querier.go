@@ -24,6 +24,7 @@ type Querier interface {
 	DeleteTag(ctx context.Context, id int32) error
 	DeleteTagByName(ctx context.Context, name string) error
 	DeleteUser(ctx context.Context, id int32) error
+	GetAllPosts(ctx context.Context) ([]Post, error)
 	GetComment(ctx context.Context, id int32) (Comment, error)
 	GetComments(ctx context.Context) ([]Comment, error)
 	GetCommentsByPost(ctx context.Context, postID int32) ([]Comment, error)
