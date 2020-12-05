@@ -12,6 +12,7 @@ import (
 	"ginbar/api/models"
 	"ginbar/mysql/db"
 
+	"github.com/gin-contrib/cache"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -104,6 +105,9 @@ func (server *Server) CreatePost(context *gin.Context) {
 		return
 	}
 
+	// we mutated posts so we need to recache the getPosts response
+	server.postsResponseCache.Delete(cache.CreateKey("/api/post/"))
+
 	// everything worked fine so we send a Status code 204
 	// TODO implement Status 201
 	context.Status(http.StatusNoContent)
@@ -164,6 +168,9 @@ func (server *Server) UploadPost(context *gin.Context) {
 		context.Error(err)
 		return
 	}
+
+	// we mutated posts so we need to recache the getPosts response
+	server.postsResponseCache.Delete("/api/post/")
 }
 
 // GetAll retrives all users from the database and returns these users as
@@ -187,6 +194,7 @@ func (server *Server) GetAll(context *gin.Context) {
 
 // Get retrieves a post from the database
 func (server *Server) Get(context *gin.Context) {
+	fmt.Println(context.Request.URL.RequestURI())
 	var postID int64
 	postID, err := strconv.ParseInt(context.Param("post_id"), 10, 64)
 	if err != nil {
@@ -323,6 +331,8 @@ func (server *Server) VotePost(context *gin.Context) {
 		return
 	}
 
+	// post mutated we need to recache the post response
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", form.PostID)))
 	context.Status(http.StatusOK)
 
 }

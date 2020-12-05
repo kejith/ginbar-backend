@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"time"
 
-	"ginbar/api/models"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
+	"github.com/gin-contrib/cache"
+	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/contrib/static"
@@ -18,18 +19,11 @@ import (
 
 // Server serves HTTP requests and Stores Connections, Sessions and State
 type Server struct {
-	store       db.Store
-	router      *gin.Engine
-	sessions    sessions.CookieStore
-	directories utils.Directories
-	state       State
-}
-
-// State represents memcached State to retrieve data when it didnt change
-type State struct {
-	Posts      *[]models.PostJSON
-	PostLastID int32
-	HasChanged bool
+	store              db.Store
+	router             *gin.Engine
+	sessions           sessions.CookieStore
+	directories        utils.Directories
+	postsResponseCache *persistence.InMemoryStore
 }
 
 // NewServer creates a new HTTP server and sets up routing.
@@ -55,7 +49,6 @@ func NewServer(store db.Store) (*Server, error) {
 		router:      gin.New(),
 		sessions:    sessions.NewCookieStore([]byte(secret)),
 		directories: directories,
-		state:       State{PostLastID: 0, HasChanged: true},
 	}
 
 	//
@@ -71,9 +64,8 @@ func NewServer(store db.Store) (*Server, error) {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
-	//server.router.Use(CORS())
 	server.router.Use(sessions.Sessions("gbsession", server.sessions))
-	//server.router.Use(gzip.Gzip(gzip.DefaultCompression, gzip.WithExcludedExtensions([]string{".pdf", ".mp4"})))
+	server.postsResponseCache = persistence.NewInMemoryStore(time.Second)
 
 	// UTILS
 	groupUtils := server.router.Group("/utils")
@@ -90,8 +82,8 @@ func NewServer(store db.Store) (*Server, error) {
 	// APi/POST
 	groupPost := groupAPI.Group("/post")
 	{
-		groupPost.GET("/", server.GetAll)
-		groupPost.GET("/:post_id", server.Get)
+		groupPost.GET("/", cache.CachePage(server.postsResponseCache, time.Minute, server.GetAll))
+		groupPost.GET("/:post_id", cache.CachePage(server.postsResponseCache, time.Minute*30, server.Get))
 		groupPost.GET("/:post_id/comments", server.GetComments)
 		groupPost.POST("/create", server.CreatePost)
 		groupPost.POST("/upload", server.UploadPost)

@@ -9,6 +9,7 @@ import (
 	"ginbar/api/models"
 	"ginbar/mysql/db"
 
+	"github.com/gin-contrib/cache"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -124,6 +125,12 @@ func (server *Server) CreateComment(context *gin.Context) {
 
 	commentJSON := models.CommentJSON{}
 	commentJSON.PopulateComment(comment)
+
+	// post mutated we need to recache the post response
+	err = server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", form.PostID)))
+	if err != nil {
+		fmt.Println(err)
+	}
 	context.JSON(http.StatusOK, commentJSON)
 }
 
@@ -168,6 +175,16 @@ func (server *Server) VoteComment(context *gin.Context) {
 		context.Error(err)
 		return
 	}
+
+	comment, err := server.store.GetComment(context, form.CommentID)
+
+	if err != nil {
+		context.Error(err)
+		return
+	}
+
+	// post mutated we need to recache the post response
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", comment.PostID)))
 
 	context.Status(http.StatusOK)
 }

@@ -7,6 +7,7 @@ import (
 	"ginbar/mysql/db"
 	"net/http"
 
+	"github.com/gin-contrib/cache"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -91,6 +92,9 @@ func (server *Server) CreatePostTag(context *gin.Context) {
 		UserID: userID,
 	}
 
+	// post mutated we need to recache the post response
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", tag.PostID)))
+
 	context.JSON(http.StatusOK, tag)
 }
 
@@ -135,6 +139,15 @@ func (server *Server) VotePostTag(context *gin.Context) {
 		context.Error(err)
 		return
 	}
+
+	tag, err := server.store.GetPostTag(context, form.PostTagID)
+	if err != nil {
+		context.Error(err)
+		return
+	}
+
+	// post mutated we need to recache the post response
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", tag.PostID)))
 
 	context.Status(http.StatusOK)
 

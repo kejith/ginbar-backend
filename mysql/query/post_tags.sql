@@ -6,6 +6,9 @@ LEFT JOIN post_tag_votes AS ptv ON ptv.post_tag_id = pt.id AND ptv.user_id = ?
 WHERE pt.post_id = ?
 ORDER BY score DESC;
 
+/* name: GetPostTag :one */
+SELECT * FROM post_tags WHERE id = ?;
+
 /* name: AddTagToPost :execresult */
 INSERT INTO post_tags (tag_id, post_id, user_id) VALUES (?, ?, ?);
 

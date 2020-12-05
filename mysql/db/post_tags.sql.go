@@ -22,6 +22,23 @@ func (q *Queries) AddTagToPost(ctx context.Context, arg AddTagToPostParams) (sql
 	return q.db.ExecContext(ctx, addTagToPost, arg.TagID, arg.PostID, arg.UserID)
 }
 
+const getPostTag = `-- name: GetPostTag :one
+SELECT id, score, tag_id, post_id, user_id FROM post_tags WHERE id = ?
+`
+
+func (q *Queries) GetPostTag(ctx context.Context, id int32) (PostTag, error) {
+	row := q.db.QueryRowContext(ctx, getPostTag, id)
+	var i PostTag
+	err := row.Scan(
+		&i.ID,
+		&i.Score,
+		&i.TagID,
+		&i.PostID,
+		&i.UserID,
+	)
+	return i, err
+}
+
 const getTagsByPost = `-- name: GetTagsByPost :many
 SELECT pt.id, pt.score, pt.post_id, pt.user_id, t.name, IFNULL(ptv.upvoted, 0) upvoted
 FROM post_tags pt 
