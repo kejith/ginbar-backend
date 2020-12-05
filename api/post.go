@@ -47,15 +47,42 @@ func (server *Server) CreatePost(context *gin.Context) {
 		return
 	}
 
-	fileName, _, err := utils.ProcessUploadedImage(form.URL, server.directories)
+	response, fileType, fileFormat, err := utils.LoadFileFromURL(form.URL)
 	if err != nil {
-		fmt.Println(err)
+		context.Error(err)
 		return
+	}
+	defer response.Body.Close()
+
+	var filePath string
+	var contentType string
+	var thumbnailFilePath string
+	switch fileType {
+	case "image":
+		filePath, thumbnailFilePath, err = utils.ProcessImageFromURL(response, fileFormat, server.directories)
+		if err != nil {
+			context.Error(err)
+			return
+		}
+
+		contentType = "image"
+
+		break
+	case "video":
+		filePath, thumbnailFilePath, err = utils.ProcessVideoFromURL(response, fileFormat, server.directories)
+		if err != nil {
+			context.Error(err)
+			return
+		}
+
+		contentType = fmt.Sprintf("%s/%s", fileType, fileFormat)
+		break
 	}
 
 	// read data from session
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
+	fmt.Println(userName)
 
 	if !ok {
 		context.Status(http.StatusInternalServerError)
@@ -65,10 +92,10 @@ func (server *Server) CreatePost(context *gin.Context) {
 
 	parameters := db.CreatePostParams{
 		Url:               form.URL,
-		Filename:          filepath.Base(fileName),
-		ThumbnailFilename: filepath.Base(fileName),
+		Filename:          filepath.Base(filePath),
+		ThumbnailFilename: filepath.Base(thumbnailFilePath),
 		UserName:          userName,
-		ContentType:       "image",
+		ContentType:       contentType,
 	}
 
 	err = server.store.CreatePost(context, parameters)

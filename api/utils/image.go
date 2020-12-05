@@ -90,8 +90,8 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 	return
 }
 
-// ProcessUploadedImage ... TODO
-func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
+// ProcessImageFromURL ... TODO
+func ProcessImageFromURL(response *http.Response, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
 	// create Filepaths
 	// cwd, err := os.Getwd()
 	// if err != nil {
@@ -100,17 +100,6 @@ func ProcessUploadedImage(url string, dirs Directories) (fileName string, thumbn
 
 	//imageDir := filepath.Join(cwd, "public", "images")
 	//thumbnailDir := filepath.Join(imageDir, "thumbnails")
-
-	// load image
-	response, err := http.Get(url)
-	if err != nil {
-		return "", "", err
-	}
-	defer response.Body.Close()
-
-	if response.StatusCode != 200 {
-		return "", "", errors.New("Received non 200 response code")
-	}
 
 	img, _, err := image.Decode(response.Body)
 	if err != nil {
