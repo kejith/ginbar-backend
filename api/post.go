@@ -169,27 +169,11 @@ func (server *Server) UploadPost(context *gin.Context) {
 // GetAll retrives all users from the database and returns these users as
 // JSON Data
 func (server *Server) GetAll(context *gin.Context) {
-	// read data from session
-	// session := sessions.Default(context)
 
-	// var userID int32 = 0
-	// if res := session.Get("userid"); res != nil {
-	// 	userID = res.(int32)
-	// }
-
-	// TODO: check if CORS is needed
-	//context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-
-	var posts []models.PostJSON
+	var posts *[]models.PostJSON
 	var err error
-	// IF userID == 0 the client is not logged in so we send Posts without
-	// voting information
-	// ELSE sending Posts data with voting information
-	// if userID == 0 {
+
 	posts, err = models.GetPosts(server.store, context)
-	// } else {
-	// 	posts, err = models.GetVotedPosts(server.store, context, userID)
-	// }
 
 	if err != nil {
 		context.Error(err)
@@ -197,16 +181,7 @@ func (server *Server) GetAll(context *gin.Context) {
 		return
 	}
 
-	// TODO: remove struct. Not needed anymore but we have to change
-	// frontend code too
-	type PostsResult struct {
-		Posts []models.PostJSON `json:"posts"`
-	}
-
-	postsResult := PostsResult{}
-	postsResult.Posts = posts
-
-	context.JSON(http.StatusOK, postsResult)
+	context.JSON(http.StatusOK, gin.H{"posts": *posts})
 
 }
 

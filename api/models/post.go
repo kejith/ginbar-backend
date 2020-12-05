@@ -97,7 +97,7 @@ func GetVotedPosts(store db.Store, context *gin.Context, userID int32) ([]PostJS
 }
 
 // GetPosts returns Posts with voting information
-func GetPosts(store db.Store, context *gin.Context) ([]PostJSON, error) {
+func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 	lastIDString, ok := context.GetQuery("last_id")
 	var lastID int32 = 0
 	if ok {
@@ -125,5 +125,5 @@ func GetPosts(store db.Store, context *gin.Context) ([]PostJSON, error) {
 		postsJSON = append(postsJSON, p)
 	}
 
-	return postsJSON, nil
+	return &postsJSON, nil
 }

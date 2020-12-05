@@ -34,9 +34,9 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 	_ = imageFiles
 
 	//filesInDatabase := make(map[string]int)
-	length := len(posts)
+	length := len(*posts)
 	i := 1
-	for _, post := range posts {
+	for _, post := range *posts {
 		fileName := post.FileName
 
 		if post.ContentType == "video/mp4" {
@@ -72,9 +72,9 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 		return
 	}
 
-	length := len(posts)
+	length := len(*posts)
 	count := 0
-	for _, post := range posts {
+	for _, post := range *posts {
 		url := post.URL
 
 		count = 1 + count
