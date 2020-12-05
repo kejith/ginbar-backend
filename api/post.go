@@ -139,14 +139,14 @@ func (server *Server) UploadPost(context *gin.Context) {
 	var contentType string
 	switch fileType {
 	case "video":
-		fileName, thumbnailFilename, err = utils.ProcessUploadedVideo(file, fileFormat, server.directories)
+		fileName, thumbnailFilename, err = utils.ProcessUploadedVideo(&file, fileFormat, server.directories)
 		contentType = mimeType
 		// everything worked fine so we send a Status code 204
 		// TODO implement Status 201
 		context.Status(http.StatusNoContent)
 		break
 	case "image":
-		fileName, thumbnailFilename, err = utils.ProcessImageFromMultipart(file, fileFormat, server.directories)
+		fileName, thumbnailFilename, err = utils.ProcessImageFromMultipart(&file, fileFormat, server.directories)
 		contentType = "image"
 		break
 	}

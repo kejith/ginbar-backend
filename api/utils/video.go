@@ -13,7 +13,7 @@ import (
 )
 
 // ProcessUploadedVideo saves the uploaded video to disk and creates a thumbnail
-func ProcessUploadedVideo(file multipart.File, format string, dirs Directories) (fileName string, thumbnailFilename string, err error) {
+func ProcessUploadedVideo(file *multipart.File, format string, dirs Directories) (fileName string, thumbnailFilename string, err error) {
 	name := fmt.Sprintf("%v", time.Now().UnixNano())
 
 	// save uploaded video file into video directory
@@ -44,7 +44,7 @@ func ProcessVideoFromURL(response *http.Response, format string, dirs Directorie
 
 // SaveMultipartFile takes a multipart File and saves it to the disk and returns
 // a filepath to the saved file
-func SaveMultipartFile(file multipart.File, name string, format string, directory string) (filePath string, err error) {
+func SaveMultipartFile(file *multipart.File, name string, format string, directory string) (filePath string, err error) {
 	fileName := fmt.Sprintf("%v.%s", name, format)
 	filePath = filepath.Join(directory, fileName)
 
@@ -54,7 +54,7 @@ func SaveMultipartFile(file multipart.File, name string, format string, director
 	}
 	defer localFile.Close()
 
-	_, err = io.Copy(localFile, file)
+	_, err = io.Copy(localFile, *file)
 	if err != nil {
 		return "", err
 	}

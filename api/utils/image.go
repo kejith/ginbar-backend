@@ -92,10 +92,10 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 }
 
 // ProcessImage saves an image to the disk and creates a thumbnail
-func ProcessImage(img image.Image, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
+func ProcessImage(img *image.Image, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
 	fileName = fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
 	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
-	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), &img, 75)
+	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), img, 75)
 	if err != nil {
 		if imgFile != nil {
 			os.Remove(imgFile.Name())
@@ -106,7 +106,7 @@ func ProcessImage(img image.Image, format string, dirs Directories) (fileName st
 	}
 	defer imgFile.Close()
 
-	imgCropped, err := CropImage(&img, 150, 150)
+	imgCropped, err := CropImage(img, 150, 150)
 	if err != nil {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
@@ -138,17 +138,17 @@ func ProcessImageFromURL(response *http.Response, format string, dirs Directorie
 		return "", "", err
 	}
 
-	return ProcessImage(img, format, dirs)
+	return ProcessImage(&img, format, dirs)
 
 }
 
 // ProcessImageFromMultipart ... TODO
-func ProcessImageFromMultipart(file multipart.File, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
-	img, _, err := image.Decode(file)
+func ProcessImageFromMultipart(file *multipart.File, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
+	img, _, err := image.Decode(*file)
 	if err != nil {
 		return "", "", err
 	}
-	filePath, thumbnailFilePath, err := ProcessImage(img, format, dirs)
+	filePath, thumbnailFilePath, err := ProcessImage(&img, format, dirs)
 	return filepath.Base(filePath), filepath.Base(thumbnailFilePath), err
 }
 
