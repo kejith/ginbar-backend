@@ -134,27 +134,35 @@ func (server *Server) UploadPost(context *gin.Context) {
 	mimeComponents := strings.Split(mimeType, "/")
 	fileType, fileFormat := mimeComponents[0], mimeComponents[1]
 
+	var fileName string
+	var thumbnailFilename string
+	var contentType string
 	switch fileType {
 	case "video":
-		fileName, thumbnailFilename, err := utils.ProcessUploadedVideo(file, fileFormat, server.directories)
-
-		parameters := db.CreatePostParams{
-			Url:               "",
-			Filename:          fileName,
-			ThumbnailFilename: thumbnailFilename,
-			UserName:          userName,
-			ContentType:       handler.Header.Get("Content-Type"),
-		}
-
-		err = server.store.CreatePost(context, parameters)
-		if err != nil {
-			context.Error(err)
-			return
-		}
-
+		fileName, thumbnailFilename, err = utils.ProcessUploadedVideo(file, fileFormat, server.directories)
+		contentType = mimeType
 		// everything worked fine so we send a Status code 204
 		// TODO implement Status 201
 		context.Status(http.StatusNoContent)
+		break
+	case "image":
+		fileName, thumbnailFilename, err = utils.ProcessImageFromMultipart(file, fileFormat, server.directories)
+		contentType = "image"
+		break
+	}
+
+	parameters := db.CreatePostParams{
+		Url:               "",
+		Filename:          fileName,
+		ThumbnailFilename: thumbnailFilename,
+		UserName:          userName,
+		ContentType:       contentType,
+	}
+
+	err = server.store.CreatePost(context, parameters)
+	if err != nil {
+		context.Error(err)
+		return
 	}
 }
 
