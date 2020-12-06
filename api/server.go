@@ -124,6 +124,9 @@ func NewServer(store db.Store) (*Server, error) {
 
 	// Serve static files from ./public/
 	server.router.Use(static.Serve("/", static.LocalFile("./public", true)))
+	server.router.NoRoute(func(c *gin.Context) {
+		c.File("./public/index.html")
+	})
 
 	return server, nil
 
@@ -162,8 +165,8 @@ func CORS() gin.HandlerFunc {
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
-	//server.router.RunTLS(":443", "./server.crt", "./server.key")
-	return server.router.Run(address)
+	// server.router.Run(address)
+	return server.router.RunTLS(":443", "./kejith.de.pem", "./kejith.de.key")
 }
 
 func errorResponse(err error) gin.H {

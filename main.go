@@ -83,7 +83,7 @@ func main() {
 	}
 
 	// Start Server
-	err = server.Start(":8080")
+	err = server.Start(":80")
 	if err != nil {
 		log.Fatal("Can't start server", err)
 	}
