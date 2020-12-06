@@ -165,8 +165,8 @@ func CORS() gin.HandlerFunc {
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
-	// server.router.Run(address)
-	return server.router.RunTLS(":443", "./kejith.de.pem", "./kejith.de.key")
+	return server.router.Run(address)
+	// return server.router.RunTLS(":443", "./kejith.de.pem", "./kejith.de.key")
 }
 
 func errorResponse(err error) gin.H {

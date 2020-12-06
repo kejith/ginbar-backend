@@ -7,7 +7,7 @@ WHERE
 	deleted_at IS NULL 
 ORDER BY
 	posts.id DESC
-LIMIT 150;
+LIMIT 50;
 
 /* name: GetNextPosts :many */
 SELECT
@@ -19,7 +19,7 @@ WHERE
 	posts.id < ?
 ORDER BY
 	posts.id DESC
-LIMIT 150;
+LIMIT 50;
 
 /* name: GetAllPosts :many */
 SELECT

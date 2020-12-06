@@ -106,7 +106,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (fileName s
 	}
 	defer imgFile.Close()
 
-	imgCropped, err := CropImage(img, 150, 150)
+	imgCropped, err := CropImage(img, 200, 200)
 	if err != nil {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
@@ -115,7 +115,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (fileName s
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 100)
+	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 75)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())

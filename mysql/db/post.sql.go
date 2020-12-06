@@ -98,7 +98,7 @@ WHERE
 	posts.id < ?
 ORDER BY
 	posts.id DESC
-LIMIT 150
+LIMIT 50
 `
 
 func (q *Queries) GetNextPosts(ctx context.Context, id int32) ([]Post, error) {
@@ -172,7 +172,7 @@ WHERE
 	deleted_at IS NULL 
 ORDER BY
 	posts.id DESC
-LIMIT 150
+LIMIT 50
 `
 
 func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
