@@ -65,7 +65,7 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (GetUserRow, error) {
 }
 
 const getUserByName = `-- name: GetUserByName :one
-SELECT id, created_at, updated_at, deleted_at, name, email, password
+SELECT id, created_at, updated_at, deleted_at, name, email, password, level
 FROM users
 WHERE name = ? AND deleted_at is NULL
 `
@@ -81,6 +81,7 @@ func (q *Queries) GetUserByName(ctx context.Context, name string) (User, error) 
 		&i.Name,
 		&i.Email,
 		&i.Password,
+		&i.Level,
 	)
 	return i, err
 }

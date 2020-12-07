@@ -49,7 +49,7 @@ func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 
 const getAllPosts = `-- name: GetAllPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
 FROM
 	posts
 `
@@ -73,6 +73,7 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 			&i.ThumbnailFilename,
 			&i.ContentType,
 			&i.Score,
+			&i.UserLevel,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -90,19 +91,25 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 
 const getNextPosts = `-- name: GetNextPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
 FROM
 	posts 
 WHERE
 	deleted_at IS NULL AND
-	posts.id < ?
+	posts.id < ? AND
+	posts.user_level <= ?
 ORDER BY
 	posts.id DESC
 LIMIT 50
 `
 
-func (q *Queries) GetNextPosts(ctx context.Context, id int32) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getNextPosts, id)
+type GetNextPostsParams struct {
+	ID        int32 `json:"id"`
+	UserLevel int32 `json:"user_level"`
+}
+
+func (q *Queries) GetNextPosts(ctx context.Context, arg GetNextPostsParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getNextPosts, arg.ID, arg.UserLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -120,6 +127,7 @@ func (q *Queries) GetNextPosts(ctx context.Context, id int32) ([]Post, error) {
 			&i.ThumbnailFilename,
 			&i.ContentType,
 			&i.Score,
+			&i.UserLevel,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -137,16 +145,22 @@ func (q *Queries) GetNextPosts(ctx context.Context, id int32) ([]Post, error) {
 
 const getPost = `-- name: GetPost :one
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
 FROM
 	posts 
 WHERE
-	posts.id = ? 
-	AND deleted_at IS NULL
+	posts.id = ? AND 
+	deleted_at IS NULL AND
+	posts.user_level <= ?
 `
 
-func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
-	row := q.db.QueryRowContext(ctx, getPost, id)
+type GetPostParams struct {
+	ID        int32 `json:"id"`
+	UserLevel int32 `json:"user_level"`
+}
+
+func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, getPost, arg.ID, arg.UserLevel)
 	var i Post
 	err := row.Scan(
 		&i.ID,
@@ -158,6 +172,7 @@ func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 		&i.ThumbnailFilename,
 		&i.ContentType,
 		&i.Score,
+		&i.UserLevel,
 		&i.UserName,
 	)
 	return i, err
@@ -165,18 +180,19 @@ func (q *Queries) GetPost(ctx context.Context, id int32) (Post, error) {
 
 const getPosts = `-- name: GetPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
 FROM
 	posts 
 WHERE
-	deleted_at IS NULL 
+	deleted_at IS NULL AND
+	posts.user_level <= ?
 ORDER BY
 	posts.id DESC
 LIMIT 50
 `
 
-func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getPosts)
+func (q *Queries) GetPosts(ctx context.Context, userLevel int32) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPosts, userLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -194,6 +210,7 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 			&i.ThumbnailFilename,
 			&i.ContentType,
 			&i.Score,
+			&i.UserLevel,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -211,17 +228,23 @@ func (q *Queries) GetPosts(ctx context.Context) ([]Post, error) {
 
 const getPostsByUser = `-- name: GetPostsByUser :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
 FROM
 	posts 
 WHERE
-	user_name = ? 
-	AND deleted_at IS NULL
+	user_name = ? AND 
+	deleted_at IS NULL AND
+	posts.user_level <= ?
 ORDER BY posts.id DESC
 `
 
-func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getPostsByUser, userName)
+type GetPostsByUserParams struct {
+	UserName  string `json:"user_name"`
+	UserLevel int32  `json:"user_level"`
+}
+
+func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getPostsByUser, arg.UserName, arg.UserLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +262,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, 
 			&i.ThumbnailFilename,
 			&i.ContentType,
 			&i.Score,
+			&i.UserLevel,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -256,20 +280,22 @@ func (q *Queries) GetPostsByUser(ctx context.Context, userName string) ([]Post, 
 
 const getVotedPost = `-- name: GetVotedPost :one
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_name, 
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.user_name, 
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
 	LEFT JOIN post_votes AS pv ON pv.post_id = p.id 
-	AND pv.user_id = ? 
+	AND pv.user_id = ? AND
+	p.user_level <= ?
 WHERE
 	p.deleted_at IS NULL AND
 	p.id = ?
 `
 
 type GetVotedPostParams struct {
-	UserID int32 `json:"user_id"`
-	ID     int32 `json:"id"`
+	UserID    int32 `json:"user_id"`
+	UserLevel int32 `json:"user_level"`
+	ID        int32 `json:"id"`
 }
 
 type GetVotedPostRow struct {
@@ -282,12 +308,13 @@ type GetVotedPostRow struct {
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`
 	Score             int32        `json:"score"`
+	UserLevel         int32        `json:"user_level"`
 	UserName          string       `json:"user_name"`
 	Upvoted           interface{}  `json:"upvoted"`
 }
 
 func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (GetVotedPostRow, error) {
-	row := q.db.QueryRowContext(ctx, getVotedPost, arg.UserID, arg.ID)
+	row := q.db.QueryRowContext(ctx, getVotedPost, arg.UserID, arg.UserLevel, arg.ID)
 	var i GetVotedPostRow
 	err := row.Scan(
 		&i.ID,
@@ -299,6 +326,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 		&i.ThumbnailFilename,
 		&i.ContentType,
 		&i.Score,
+		&i.UserLevel,
 		&i.UserName,
 		&i.Upvoted,
 	)
@@ -307,15 +335,21 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 
 const getVotedPosts = `-- name: GetVotedPosts :many
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_name,
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.user_name,
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
 	LEFT JOIN ( SELECT id, created_at, updated_at, deleted_at, upvoted, user_id, post_id FROM post_votes WHERE user_id = ? ) AS pv ON pv.post_id = p.id 
 WHERE
-	p.deleted_at IS NULL
+	p.deleted_at IS NULL AND
+	p.user_level <= ?
 ORDER BY p.id DESC
 `
+
+type GetVotedPostsParams struct {
+	UserID    int32 `json:"user_id"`
+	UserLevel int32 `json:"user_level"`
+}
 
 type GetVotedPostsRow struct {
 	ID                int32        `json:"id"`
@@ -327,12 +361,13 @@ type GetVotedPostsRow struct {
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`
 	Score             int32        `json:"score"`
+	UserLevel         int32        `json:"user_level"`
 	UserName          string       `json:"user_name"`
 	Upvoted           interface{}  `json:"upvoted"`
 }
 
-func (q *Queries) GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPostsRow, error) {
-	rows, err := q.db.QueryContext(ctx, getVotedPosts, userID)
+func (q *Queries) GetVotedPosts(ctx context.Context, arg GetVotedPostsParams) ([]GetVotedPostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getVotedPosts, arg.UserID, arg.UserLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -350,6 +385,7 @@ func (q *Queries) GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPo
 			&i.ThumbnailFilename,
 			&i.ContentType,
 			&i.Score,
+			&i.UserLevel,
 			&i.UserName,
 			&i.Upvoted,
 		); err != nil {

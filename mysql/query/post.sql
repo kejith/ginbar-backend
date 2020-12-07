@@ -4,7 +4,8 @@ SELECT
 FROM
 	posts 
 WHERE
-	deleted_at IS NULL 
+	deleted_at IS NULL AND
+	posts.user_level <= ?
 ORDER BY
 	posts.id DESC
 LIMIT 50;
@@ -16,7 +17,8 @@ FROM
 	posts 
 WHERE
 	deleted_at IS NULL AND
-	posts.id < ?
+	posts.id < ? AND
+	posts.user_level <= ?
 ORDER BY
 	posts.id DESC
 LIMIT 50;
@@ -33,8 +35,9 @@ SELECT
 FROM
 	posts 
 WHERE
-	posts.id = ? 
-	AND deleted_at IS NULL;
+	posts.id = ? AND 
+	deleted_at IS NULL AND
+	posts.user_level <= ?;
 
 /* name: UpdatePostFiles :exec */
 UPDATE
@@ -51,8 +54,9 @@ SELECT
 FROM
 	posts 
 WHERE
-	user_name = ? 
-	AND deleted_at IS NULL
+	user_name = ? AND 
+	deleted_at IS NULL AND
+	posts.user_level <= ?
 ORDER BY posts.id DESC;
 
 /* name: CreatePost :exec */
@@ -75,7 +79,8 @@ FROM
 	posts p
 	LEFT JOIN ( SELECT * FROM post_votes WHERE user_id = ? ) AS pv ON pv.post_id = p.id 
 WHERE
-	p.deleted_at IS NULL
+	p.deleted_at IS NULL AND
+	p.user_level <= ?
 ORDER BY p.id DESC;
 
 /* name: GetVotedPost :one */
@@ -85,7 +90,8 @@ SELECT
 FROM
 	posts p
 	LEFT JOIN post_votes AS pv ON pv.post_id = p.id 
-	AND pv.user_id = ? 
+	AND pv.user_id = ? AND
+	p.user_level <= ?
 WHERE
 	p.deleted_at IS NULL AND
 	p.id = ?;

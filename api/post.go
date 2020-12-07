@@ -209,8 +209,18 @@ func (server *Server) Get(context *gin.Context) {
 		userID = 0
 	}
 
+	userLevel, ok := session.Get("userlevel").(int32)
+	if !ok {
+		userLevel = 0
+	}
+
 	if userID == 0 {
-		post, err := server.store.GetPost(context, int32(postID))
+		params := db.GetPostParams{
+			ID:        int32(postID),
+			UserLevel: 0,
+		}
+
+		post, err := server.store.GetPost(context, params)
 		if err != nil {
 			context.Error(err)
 			context.Status(http.StatusInternalServerError)
@@ -241,8 +251,9 @@ func (server *Server) Get(context *gin.Context) {
 		})
 	} else {
 		postParams := db.GetVotedPostParams{
-			ID:     int32(postID),
-			UserID: int32(userID),
+			ID:        int32(postID),
+			UserID:    int32(userID),
+			UserLevel: int32(userLevel),
 		}
 		post, err := server.store.GetVotedPost(context, postParams)
 		if err != nil {

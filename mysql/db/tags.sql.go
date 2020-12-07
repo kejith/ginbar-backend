@@ -36,29 +36,29 @@ func (q *Queries) DeleteTagByName(ctx context.Context, name string) error {
 }
 
 const getTag = `-- name: GetTag :one
-SELECT id, name FROM tags WHERE tags.id = ? LIMIT 1
+SELECT id, user_level, name FROM tags WHERE tags.id = ? LIMIT 1
 `
 
 func (q *Queries) GetTag(ctx context.Context, id int32) (Tag, error) {
 	row := q.db.QueryRowContext(ctx, getTag, id)
 	var i Tag
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.UserLevel, &i.Name)
 	return i, err
 }
 
 const getTagByName = `-- name: GetTagByName :one
-SELECT id, name FROM tags WHERE tags.name = ? LIMIT 1
+SELECT id, user_level, name FROM tags WHERE tags.name = ? LIMIT 1
 `
 
 func (q *Queries) GetTagByName(ctx context.Context, name string) (Tag, error) {
 	row := q.db.QueryRowContext(ctx, getTagByName, name)
 	var i Tag
-	err := row.Scan(&i.ID, &i.Name)
+	err := row.Scan(&i.ID, &i.UserLevel, &i.Name)
 	return i, err
 }
 
 const getTags = `-- name: GetTags :many
-SELECT id, name FROM tags ORDER BY	id
+SELECT id, user_level, name FROM tags ORDER BY	id
 `
 
 func (q *Queries) GetTags(ctx context.Context) ([]Tag, error) {
@@ -70,7 +70,7 @@ func (q *Queries) GetTags(ctx context.Context) ([]Tag, error) {
 	items := []Tag{}
 	for rows.Next() {
 		var i Tag
-		if err := rows.Scan(&i.ID, &i.Name); err != nil {
+		if err := rows.Scan(&i.ID, &i.UserLevel, &i.Name); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

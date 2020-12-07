@@ -13,10 +13,12 @@ CREATE TABLE posts (
   thumbnail_filename VARCHAR(255) NOT NULL,
   content_type VARCHAR(255) NOT NULL,
   score int NOT NULL DEFAULT 0,
+  user_level INT UNSIGNED NOT NULL DEFAULT 0,
 
   /* foreign key*/
   user_name VARCHAR(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 ALTER TABLE posts
+  ADD KEY idx_posts_userlevel (user_level),
   ADD FOREIGN KEY (user_name) REFERENCES users(name) ON UPDATE CASCADE ON DELETE RESTRICT;

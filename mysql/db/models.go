@@ -38,6 +38,7 @@ type Post struct {
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`
 	Score             int32        `json:"score"`
+	UserLevel         int32        `json:"user_level"`
 	UserName          string       `json:"user_name"`
 }
 
@@ -67,8 +68,9 @@ type PostVote struct {
 }
 
 type Tag struct {
-	ID   int32  `json:"id"`
-	Name string `json:"name"`
+	ID        int32  `json:"id"`
+	UserLevel int32  `json:"user_level"`
+	Name      string `json:"name"`
 }
 
 type User struct {
@@ -79,4 +81,5 @@ type User struct {
 	Name      string       `json:"name"`
 	Email     string       `json:"email"`
 	Password  string       `json:"password"`
+	Level     int32        `json:"level"`
 }

@@ -185,6 +185,7 @@ func (server *Server) Login(context *gin.Context) {
 	fmt.Println("user")
 	session.Set("user", user.Name)
 	session.Set("userid", user.ID)
+	session.Set("userlevel", user.Level)
 	if err = session.Save(); err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
 		return
@@ -200,6 +201,7 @@ func (server *Server) UserLogout(context *gin.Context) {
 	session := sessions.Default(context)
 	session.Set("user", "")
 	session.Set("userid", 0)
+	session.Set("userlevel", 0)
 	session.Clear()
 	session.Options(sessions.Options{Path: "/", MaxAge: -1})
 	session.Save()

@@ -16,3 +16,14 @@ ALTER TABLE post_tags
   ADD FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE,
   ADD FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE,
   ADD FOREIGN KEY (post_id) REFERENCES posts(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+-- CREATE TRIGGER 
+-- 	trigger_update_userlevel_on_create_post_tag
+-- AFTER INSERT ON post_tags 
+-- 	FOR EACH ROW
+-- 		UPDATE posts p
+-- 	  LEFT JOIN post_tags ptags ON p.id = NEW.post_id
+-- 		LEFT JOIN tags t ON t.id = NEW.tag_id
+-- 		SET p.user_level = GREATEST(t.user_level, p.user_level)
+-- 		WHERE
+-- 			p.id = NEW.post_id;

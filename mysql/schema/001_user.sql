@@ -10,7 +10,8 @@ CREATE TABLE users (
   /* body */  
   name varchar(255) NOT NULL,
   email varchar(255) NOT NULL,
-  password varchar(255) NOT NULL
+  password varchar(255) NOT NULL,
+  level INT UNSIGNED NOT NULL DEFAULT 1
 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -18,6 +19,7 @@ CREATE TABLE users (
 ALTER TABLE users
   ADD UNIQUE KEY name (name),
   ADD UNIQUE KEY email (email),
+  ADD KEY idx_user_level (level),
   ADD KEY idx_users_deleted_at (deleted_at);
 
 

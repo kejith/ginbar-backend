@@ -6,6 +6,7 @@ import (
 
 	"ginbar/mysql/db"
 
+	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
 
@@ -80,8 +81,8 @@ func (p *PostJSON) PopulatePost(post db.Post) {
 }
 
 // GetVotedPosts returns Posts with voting information
-func GetVotedPosts(store db.Store, context *gin.Context, userID int32) ([]PostJSON, error) {
-	posts, err := store.GetVotedPosts(context, userID)
+func GetVotedPosts(store db.Store, context *gin.Context, params db.GetVotedPostsParams) ([]PostJSON, error) {
+	posts, err := store.GetVotedPosts(context, params)
 	if err != nil {
 		return nil, err
 	}
@@ -107,12 +108,23 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 		}
 	}
 
+	session := sessions.Default(context)
+	userLevel, ok := session.Get("userlevel").(int32)
+	if !ok {
+		userLevel = 0
+	}
+
 	var posts []db.Post
 	var err error
 	if lastID != 0 {
-		posts, err = store.GetNextPosts(context, lastID)
+		params := db.GetNextPostsParams{
+			ID:        lastID,
+			UserLevel: userLevel,
+		}
+
+		posts, err = store.GetNextPosts(context, params)
 	} else {
-		posts, err = store.GetPosts(context)
+		posts, err = store.GetPosts(context, userLevel)
 	}
 	if err != nil {
 		return nil, err

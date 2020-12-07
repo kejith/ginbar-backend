@@ -29,11 +29,11 @@ type Querier interface {
 	GetComments(ctx context.Context) ([]Comment, error)
 	GetCommentsByPost(ctx context.Context, postID int32) ([]Comment, error)
 	GetLatestComment(ctx context.Context, userName string) (Comment, error)
-	GetNextPosts(ctx context.Context, id int32) ([]Post, error)
-	GetPost(ctx context.Context, id int32) (Post, error)
+	GetNextPosts(ctx context.Context, arg GetNextPostsParams) ([]Post, error)
+	GetPost(ctx context.Context, arg GetPostParams) (Post, error)
 	GetPostTag(ctx context.Context, id int32) (PostTag, error)
-	GetPosts(ctx context.Context) ([]Post, error)
-	GetPostsByUser(ctx context.Context, userName string) ([]Post, error)
+	GetPosts(ctx context.Context, userLevel int32) ([]Post, error)
+	GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) ([]Post, error)
 	GetTag(ctx context.Context, id int32) (Tag, error)
 	GetTagByName(ctx context.Context, name string) (Tag, error)
 	GetTags(ctx context.Context) ([]Tag, error)
@@ -44,7 +44,7 @@ type Querier interface {
 	GetVotedComment(ctx context.Context, arg GetVotedCommentParams) (GetVotedCommentRow, error)
 	GetVotedComments(ctx context.Context, arg GetVotedCommentsParams) ([]GetVotedCommentsRow, error)
 	GetVotedPost(ctx context.Context, arg GetVotedPostParams) (GetVotedPostRow, error)
-	GetVotedPosts(ctx context.Context, userID int32) ([]GetVotedPostsRow, error)
+	GetVotedPosts(ctx context.Context, arg GetVotedPostsParams) ([]GetVotedPostsRow, error)
 	RemoveTagFromPost(ctx context.Context) error
 	UpdateCommentVote(ctx context.Context, arg UpdateCommentVoteParams) error
 	UpdatePostFiles(ctx context.Context, arg UpdatePostFilesParams) error
