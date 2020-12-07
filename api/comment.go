@@ -34,57 +34,40 @@ type commentVoteForm struct {
 
 // GetComments retrives all comments from the database
 func (server *Server) GetComments(context *gin.Context) {
+
 	postID, err := strconv.ParseInt(context.Param("post_id"), 10, 32)
 	if err != nil {
-		context.Error(errors.New("Post ID is not valid"))
+		panic(errors.New("Post ID is not valid"))
 	}
 	// read data from session
 	session := sessions.Default(context)
+	userID := session.Get("userid").(uint)
 
-	var userID uint = 0
-	if res := session.Get("userid"); res != nil {
-		userID = res.(uint)
+	params := db.GetVotedCommentsParams{
+		PostID: int32(postID),
+		UserID: int32(userID),
 	}
 
-	//var comments []models.CommentJSON
-	if userID != 0 {
-		params := db.GetVotedCommentsParams{
-			PostID: int32(postID),
-			UserID: int32(userID),
-		}
+	// We serve Comments with voting information when
+	comments, err := server.store.GetVotedComments(context, params)
 
-		// We serve Comments with voting information when
-		comments, err := server.store.GetVotedComments(context, params)
-
-		if err != nil {
-			context.Error(err)
-			context.Status(http.StatusInternalServerError)
-			return
-		}
-
-		context.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		context.JSON(http.StatusOK, comments)
-		return
+	if err != nil {
+		panic(err)
 	}
 
-	context.Status(http.StatusInternalServerError)
+	context.JSON(http.StatusOK, comments)
+	return
+
 }
 
 // CreateComment inserts a user into the database
 func (server *Server) CreateComment(context *gin.Context) {
 	// Read Data from Form
 	var form commentWriteForm
+
 	err := context.ShouldBind(&form)
 	if err != nil {
-		context.Status(http.StatusInternalServerError)
-		context.Error(err)
-		return
-	}
-
-	if form.PostID <= 0 {
-		context.Status(http.StatusInternalServerError)
-		context.Error(errors.New("PostID invalid"))
-		return
+		panic(err)
 	}
 
 	// Get Session Information
@@ -92,46 +75,26 @@ func (server *Server) CreateComment(context *gin.Context) {
 	userName, ok := session.Get("user").(string)
 
 	if !ok {
-		context.Status(http.StatusInternalServerError)
-		context.Error(errors.New("Username Type Assertion failed"))
-		return
+		panic(errors.New("Username Type Assertion failed"))
 	}
 
-	params := db.CreateCommentParams{
-		Content:  form.Content,
-		UserName: userName,
-		PostID:   form.PostID,
-	}
-
-	if len(params.Content) < 4 {
-		context.Status(http.StatusUnprocessableEntity)
-		fmt.Println("Length of the Comment is too short to create")
-		return
-	}
-
-	err = server.store.CreateComment(context, params)
+	comment, err := models.NewComment(form.Content, form.PostID, userName)
 	if err != nil {
-		context.Status(http.StatusInternalServerError)
-		context.Error(err)
-		return
+		panic(err)
 	}
 
-	comment, err := server.store.GetLatestComment(context, userName)
+	err = comment.Save(&server.store, context)
 	if err != nil {
-		context.Status(http.StatusInternalServerError)
-		context.Error(err)
-		return
+		panic(err)
 	}
-
-	commentJSON := models.CommentJSON{}
-	commentJSON.PopulateComment(comment)
 
 	// post mutated we need to recache the post response
 	err = server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", form.PostID)))
 	if err != nil {
-		fmt.Println(err)
+		context.Error(err)
 	}
-	context.JSON(http.StatusOK, commentJSON)
+
+	context.JSON(http.StatusOK, comment)
 }
 
 // VoteComment upserts vote information into the database

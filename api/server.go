@@ -9,7 +9,6 @@ import (
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
-	"github.com/gin-contrib/cache"
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/sessions"
@@ -56,6 +55,7 @@ func NewServer(store db.Store) (*Server, error) {
 	//
 
 	// Middleware
+
 	server.router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://kejith.de"},
 		AllowMethods:     []string{"POST", "GET"},
@@ -83,8 +83,10 @@ func NewServer(store db.Store) (*Server, error) {
 	// APi/POST
 	groupPost := groupAPI.Group("/post")
 	{
-		groupPost.GET("/", cache.CachePage(server.postsResponseCache, time.Minute, server.GetAll))
-		groupPost.GET("/:post_id", cache.CachePage(server.postsResponseCache, time.Minute*30, server.Get))
+		//groupPost.GET("/", cache.CachePage(server.postsResponseCache, time.Minute, server.GetAll))
+		//groupPost.GET("/:post_id", cache.CachePage(server.postsResponseCache, time.Minute*30, server.Get))
+		groupPost.GET("/", server.GetAll)
+		groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
 		groupPost.POST("/create", server.CreatePost)
 		groupPost.POST("/upload", server.UploadPost)
@@ -136,13 +138,38 @@ func NewServer(store db.Store) (*Server, error) {
 // authenticated
 func AuthRequired(c *gin.Context) {
 	session := sessions.Default(c)
-	user := session.Get("user")
-	if user == nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+	user, okUser := session.Get("user").(string)
+	userID, okUserID := session.Get("userid").(uint)
+	if !okUser || !okUserID || len(user) < 3 || userID <= 0 {
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	c.Next()
+}
+
+// Keys for Accessing Data from the Context
+const (
+	KeyUsername     = "username"
+	KeyUserID       = "userid"
+	KeyIsAuthorized = "isAuthorized"
+)
+
+// AuthenticationRequired checks if a user session is valid and sets the flag
+// "username" and "userid" in the context
+func AuthenticationRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		session := sessions.Default(c)
+		user, okUser := session.Get("user").(string)
+		userID, okUserID := session.Get("userid").(uint)
+		if !okUser || !okUserID || len(user) < 3 || userID <= 0 {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		c.Set(KeyUsername, user)
+		c.Set(KeyUserID, userID)
+	}
 }
 
 /*

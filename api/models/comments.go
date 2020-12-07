@@ -1,11 +1,13 @@
 package models
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"ginbar/mysql/db"
+
+	"github.com/gin-gonic/gin"
 )
 
 // CommentJSON is a struct to map Data from the Database to a reduced JSON object
@@ -15,10 +17,56 @@ type CommentJSON struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	DeletedAt time.Time `json:"deleted_at"`
 	Content   string    `json:"content"`
-	Score     int     `json:"score"`
+	Score     int       `json:"score"`
 	Username  string    `json:"username"`
-	PostID    int32       `json:"post_id"`
+	PostID    int32     `json:"post_id"`
 	Upvoted   int8      `json:"upvoted"`
+}
+
+// NewComment ...
+func NewComment(content string, postID int32, userName string) (comment *CommentJSON, err error) {
+	if postID <= 0 {
+		return nil, errors.New("PostID invalid")
+	}
+
+	if len(userName) <= 3 {
+		return nil, errors.New("UserName too short")
+	}
+
+	if content == "" {
+		return nil, errors.New("Comment is empty")
+	}
+
+	comment = &CommentJSON{
+		PostID:   postID,
+		Content:  content,
+		Username: userName,
+	}
+
+	return comment, nil
+}
+
+// Save ...
+func (c *CommentJSON) Save(store *db.Store, context *gin.Context) (err error) {
+	params := db.CreateCommentParams{
+		Content:  c.Content,
+		UserName: c.Username,
+		PostID:   c.PostID,
+	}
+
+	err = (*store).CreateComment(context, params)
+	if err != nil {
+		return err
+	}
+
+	comment, err := (*store).GetLatestComment(context, c.Username)
+	if err != nil {
+		return err
+	}
+
+	c.PopulateComment(comment)
+
+	return nil
 }
 
 // PopulateVoted fills the struct with data from the Database Object
