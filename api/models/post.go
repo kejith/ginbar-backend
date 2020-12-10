@@ -99,12 +99,30 @@ func GetVotedPosts(store db.Store, context *gin.Context, params db.GetVotedPosts
 
 // GetPosts returns Posts with voting information
 func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
-	lastIDString, ok := context.GetQuery("last_id")
-	var lastID int32 = 0
+	lowestIDString, ok := context.GetQuery("lowestID")
+	var lowestID int32 = 0
 	if ok {
-		i, err := strconv.ParseInt(lastIDString, 10, 32)
+		i, err := strconv.ParseInt(lowestIDString, 10, 32)
 		if err == nil {
-			lastID = int32(i)
+			lowestID = int32(i)
+		}
+	}
+
+	highestIDString, ok := context.GetQuery("highestID")
+	var highestID int32 = 0
+	if ok {
+		i, err := strconv.ParseInt(highestIDString, 10, 32)
+		if err == nil {
+			highestID = int32(i)
+		}
+	}
+
+	postsPerRowStr, ok := context.GetQuery("postsPerRow")
+	var postsPerRow int32 = 10
+	if ok {
+		i, err := strconv.ParseInt(postsPerRowStr, 10, 32)
+		if err == nil {
+			postsPerRow = int32(i)
 		}
 	}
 
@@ -116,14 +134,27 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 
 	var posts []db.Post
 	var err error
-	if lastID != 0 {
-		params := db.GetNextPostsParams{
-			ID:        lastID,
+	if lowestID != 0 {
+		params := db.GetOlderPostsParams{
+			ID:        lowestID,
 			UserLevel: userLevel,
+			Limit:     postsPerRow*6 + 1,
 		}
 
-		posts, err = store.GetNextPosts(context, params)
-	} else {
+		posts, err = store.GetOlderPosts(context, params)
+	}
+
+	if highestID != 0 {
+		params := db.GetNewerPostsParams{
+			ID:        highestID,
+			UserLevel: userLevel,
+			Limit:     postsPerRow*6 + 1,
+		}
+
+		posts, err = store.GetNewerPosts(context, params)
+	}
+
+	if highestID == 0 && lowestID == 0 {
 		posts, err = store.GetPosts(context, userLevel)
 	}
 	if err != nil {

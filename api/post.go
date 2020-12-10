@@ -194,7 +194,6 @@ func (server *Server) GetAll(context *gin.Context) {
 
 // Get retrieves a post from the database
 func (server *Server) Get(context *gin.Context) {
-	fmt.Println(context.Request.URL.RequestURI())
 	var postID int64
 	postID, err := strconv.ParseInt(context.Param("post_id"), 10, 64)
 	if err != nil {

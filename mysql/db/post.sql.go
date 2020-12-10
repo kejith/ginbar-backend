@@ -89,27 +89,83 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 	return items, nil
 }
 
-const getNextPosts = `-- name: GetNextPosts :many
+const getNewerPosts = `-- name: GetNewerPosts :many
 SELECT
 	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
 FROM
 	posts 
 WHERE
 	deleted_at IS NULL AND
-	posts.id < ? AND
+	posts.id >= ? AND
+	posts.user_level <= ?
+ORDER BY
+	posts.id
+LIMIT ?
+`
+
+type GetNewerPostsParams struct {
+	ID        int32 `json:"id"`
+	UserLevel int32 `json:"user_level"`
+	Limit     int32 `json:"limit"`
+}
+
+func (q *Queries) GetNewerPosts(ctx context.Context, arg GetNewerPostsParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getNewerPosts, arg.ID, arg.UserLevel, arg.Limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Post{}
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Url,
+			&i.Filename,
+			&i.ThumbnailFilename,
+			&i.ContentType,
+			&i.Score,
+			&i.UserLevel,
+			&i.UserName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getOlderPosts = `-- name: GetOlderPosts :many
+SELECT
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+FROM
+	posts 
+WHERE
+	deleted_at IS NULL AND
+	posts.id <= ? AND
 	posts.user_level <= ?
 ORDER BY
 	posts.id DESC
-LIMIT 50
+LIMIT ?
 `
 
-type GetNextPostsParams struct {
+type GetOlderPostsParams struct {
 	ID        int32 `json:"id"`
 	UserLevel int32 `json:"user_level"`
+	Limit     int32 `json:"limit"`
 }
 
-func (q *Queries) GetNextPosts(ctx context.Context, arg GetNextPostsParams) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, getNextPosts, arg.ID, arg.UserLevel)
+func (q *Queries) GetOlderPosts(ctx context.Context, arg GetOlderPostsParams) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getOlderPosts, arg.ID, arg.UserLevel, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

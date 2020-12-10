@@ -10,18 +10,33 @@ ORDER BY
 	posts.id DESC
 LIMIT 50;
 
-/* name: GetNextPosts :many */
+
+/* name: GetNewerPosts :many */
 SELECT
 	* 
 FROM
 	posts 
 WHERE
 	deleted_at IS NULL AND
-	posts.id < ? AND
+	posts.id >= ? AND
+	posts.user_level <= ?
+ORDER BY
+	posts.id
+LIMIT ?;
+
+
+/* name: GetOlderPosts :many */
+SELECT
+	* 
+FROM
+	posts 
+WHERE
+	deleted_at IS NULL AND
+	posts.id <= ? AND
 	posts.user_level <= ?
 ORDER BY
 	posts.id DESC
-LIMIT 50;
+LIMIT ?;
 
 /* name: GetAllPosts :many */
 SELECT
@@ -95,3 +110,7 @@ FROM
 WHERE
 	p.deleted_at IS NULL AND
 	p.id = ?;
+
+
+
+
