@@ -88,8 +88,13 @@ func (server *Server) CreateComment(context *gin.Context) {
 		panic(err)
 	}
 
+	userID, ok := session.Get("userid").(int32)
+	if !ok {
+		userID = 0
+	}
+
 	// post mutated we need to recache the post response
-	err = server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", form.PostID)))
+	err = server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v#%v", form.PostID, userID)))
 	if err != nil {
 		context.Error(err)
 	}
@@ -147,7 +152,7 @@ func (server *Server) VoteComment(context *gin.Context) {
 	}
 
 	// post mutated we need to recache the post response
-	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", comment.PostID)))
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v#%v", comment.PostID, userID)))
 
 	context.Status(http.StatusOK)
 }

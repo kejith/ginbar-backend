@@ -147,7 +147,7 @@ func (server *Server) VotePostTag(context *gin.Context) {
 	}
 
 	// post mutated we need to recache the post response
-	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", tag.PostID)))
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v#%v", tag.PostID, userID)))
 
 	context.Status(http.StatusOK)
 

@@ -118,8 +118,13 @@ func (server *Server) CreatePost(context *gin.Context) {
 		UserLevel: userLevel,
 	})
 
+	userID, ok := session.Get("userid").(int32)
+	if !ok {
+		userID = 0
+	}
+
 	// we mutated posts so we need to recache the getPosts response
-	server.postsResponseCache.Delete(cache.CreateKey("/api/post/"))
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/#%v", userID)))
 
 	// everything worked fine so we send a Status code 204
 	// TODO implement Status 201
@@ -197,8 +202,13 @@ func (server *Server) UploadPost(context *gin.Context) {
 		UserLevel: userLevel,
 	})
 
+	userID, ok := session.Get("userid").(int32)
+	if !ok {
+		userID = 0
+	}
+
 	// we mutated posts so we need to recache the getPosts response
-	server.postsResponseCache.Delete("/api/post/")
+	server.postsResponseCache.Delete(fmt.Sprintf("/api/post/#%v", userID))
 	context.JSON(http.StatusOK, post)
 }
 
@@ -371,7 +381,7 @@ func (server *Server) VotePost(context *gin.Context) {
 	}
 
 	// post mutated we need to recache the post response
-	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v", form.PostID)))
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v#%v", form.PostID, userID)))
 	context.Status(http.StatusOK)
 
 }
