@@ -83,7 +83,11 @@ func (server *Server) CreatePost(context *gin.Context) {
 	// read data from session
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
-	fmt.Println(userName)
+
+	userLevel, ok := session.Get("userlevel").(int32)
+	if !ok {
+		userLevel = 0
+	}
 
 	if !ok {
 		context.Status(http.StatusInternalServerError)
@@ -99,29 +103,44 @@ func (server *Server) CreatePost(context *gin.Context) {
 		ContentType:       contentType,
 	}
 
-	err = server.store.CreatePost(context, parameters)
+	res, err := server.store.CreatePost(context, parameters)
 	if err != nil {
-		context.Error(err)
-		return
+		panic(err)
 	}
+
+	postID, err := res.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+
+	post, err := server.store.GetPost(context, db.GetPostParams{
+		ID:        int32(postID),
+		UserLevel: userLevel,
+	})
 
 	// we mutated posts so we need to recache the getPosts response
 	server.postsResponseCache.Delete(cache.CreateKey("/api/post/"))
 
 	// everything worked fine so we send a Status code 204
 	// TODO implement Status 201
-	context.Status(http.StatusNoContent)
+	context.JSON(http.StatusOK, post)
+
 }
 
 // UploadPost handles uploads from files and creates a post with them
 func (server *Server) UploadPost(context *gin.Context) {
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
+	userLevel, ok := session.Get("userlevel").(int32)
+	if !ok {
+		userLevel = 0
+	}
 
 	if !ok {
-		context.Status(http.StatusInternalServerError)
-		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-		return
+
+		panic(
+			errors.New(
+				" PostHandler.Create => Type Assertion failed on session['user']"))
 	}
 
 	// Limit File Size => 25 << 20 is 25MB
@@ -163,14 +182,24 @@ func (server *Server) UploadPost(context *gin.Context) {
 		ContentType:       contentType,
 	}
 
-	err = server.store.CreatePost(context, parameters)
+	res, err := server.store.CreatePost(context, parameters)
 	if err != nil {
-		context.Error(err)
-		return
+		panic(err)
 	}
+
+	postID, err := res.LastInsertId()
+	if err != nil {
+		panic(err)
+	}
+
+	post, err := server.store.GetPost(context, db.GetPostParams{
+		ID:        int32(postID),
+		UserLevel: userLevel,
+	})
 
 	// we mutated posts so we need to recache the getPosts response
 	server.postsResponseCache.Delete("/api/post/")
+	context.JSON(http.StatusOK, post)
 }
 
 // GetAll retrives all users from the database and returns these users as

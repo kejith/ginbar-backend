@@ -118,7 +118,7 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 	}
 
 	postsPerRowStr, ok := context.GetQuery("postsPerRow")
-	var postsPerRow int32 = 10
+	var postsPerRow int32 = 12
 	if ok {
 		i, err := strconv.ParseInt(postsPerRowStr, 10, 32)
 		if err == nil {
@@ -138,7 +138,7 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 		params := db.GetOlderPostsParams{
 			ID:        lowestID,
 			UserLevel: userLevel,
-			Limit:     postsPerRow*6 + 1,
+			Limit:     postsPerRow*10 + 1,
 		}
 
 		posts, err = store.GetOlderPosts(context, params)
@@ -148,7 +148,7 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 		params := db.GetNewerPostsParams{
 			ID:        highestID,
 			UserLevel: userLevel,
-			Limit:     postsPerRow*6 + 1,
+			Limit:     postsPerRow*10 + 1,
 		}
 
 		posts, err = store.GetNewerPosts(context, params)

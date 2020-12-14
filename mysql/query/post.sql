@@ -74,7 +74,7 @@ WHERE
 	posts.user_level <= ?
 ORDER BY posts.id DESC;
 
-/* name: CreatePost :exec */
+/* name: CreatePost :execresult */
 INSERT INTO posts 
     (url, filename, thumbnail_filename, user_name, content_type)
 VALUES 

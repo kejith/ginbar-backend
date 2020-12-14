@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const createPost = `-- name: CreatePost :exec
+const createPost = `-- name: CreatePost :execresult
 INSERT INTO posts 
     (url, filename, thumbnail_filename, user_name, content_type)
 VALUES 
@@ -24,15 +24,14 @@ type CreatePostParams struct {
 	ContentType       string `json:"content_type"`
 }
 
-func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) error {
-	_, err := q.db.ExecContext(ctx, createPost,
+func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (sql.Result, error) {
+	return q.db.ExecContext(ctx, createPost,
 		arg.Url,
 		arg.Filename,
 		arg.ThumbnailFilename,
 		arg.UserName,
 		arg.ContentType,
 	)
-	return err
 }
 
 const deletePost = `-- name: DeletePost :exec

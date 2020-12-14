@@ -11,7 +11,7 @@ type Querier interface {
 	AddTagToPost(ctx context.Context, arg AddTagToPostParams) (sql.Result, error)
 	CreateComment(ctx context.Context, arg CreateCommentParams) error
 	CreateCommentVote(ctx context.Context, arg CreateCommentVoteParams) error
-	CreatePost(ctx context.Context, arg CreatePostParams) error
+	CreatePost(ctx context.Context, arg CreatePostParams) (sql.Result, error)
 	CreatePostTagVote(ctx context.Context, arg CreatePostTagVoteParams) error
 	CreatePostVote(ctx context.Context, arg CreatePostVoteParams) error
 	CreateTag(ctx context.Context, name string) (sql.Result, error)

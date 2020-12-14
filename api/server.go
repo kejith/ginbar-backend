@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"ginbar/api/utils"
+	_cache "ginbar/api/utils/cache"
 	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache/persistence"
@@ -83,10 +84,10 @@ func NewServer(store db.Store) (*Server, error) {
 	// APi/POST
 	groupPost := groupAPI.Group("/post")
 	{
-		//groupPost.GET("/", cache.CachePage(server.postsResponseCache, time.Minute, server.GetAll))
-		//groupPost.GET("/:post_id", cache.CachePage(server.postsResponseCache, time.Minute*30, server.Get))
-		groupPost.GET("/", server.GetAll)
-		groupPost.GET("/:post_id", server.Get)
+		groupPost.GET("/", _cache.PageByUser(server.postsResponseCache, time.Minute, server.GetAll))
+		groupPost.GET("/:post_id", _cache.PageByUser(server.postsResponseCache, time.Minute*30, server.Get))
+		// groupPost.GET("/", server.GetAll)
+		// groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
 		groupPost.POST("/create", server.CreatePost)
 		groupPost.POST("/upload", server.UploadPost)
