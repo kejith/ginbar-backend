@@ -28,9 +28,11 @@ type Querier interface {
 	GetComment(ctx context.Context, id int32) (Comment, error)
 	GetComments(ctx context.Context) ([]Comment, error)
 	GetCommentsByPost(ctx context.Context, postID int32) ([]Comment, error)
+	GetImagePosts(ctx context.Context) ([]Post, error)
 	GetLatestComment(ctx context.Context, userName string) (Comment, error)
 	GetNewerPosts(ctx context.Context, arg GetNewerPostsParams) ([]Post, error)
 	GetOlderPosts(ctx context.Context, arg GetOlderPostsParams) ([]Post, error)
+	GetPossibleDuplicatePosts(ctx context.Context, arg GetPossibleDuplicatePostsParams) ([]GetPossibleDuplicatePostsRow, error)
 	GetPost(ctx context.Context, arg GetPostParams) (Post, error)
 	GetPostTag(ctx context.Context, id int32) (PostTag, error)
 	GetPosts(ctx context.Context, userLevel int32) ([]Post, error)
@@ -49,6 +51,7 @@ type Querier interface {
 	RemoveTagFromPost(ctx context.Context) error
 	UpdateCommentVote(ctx context.Context, arg UpdateCommentVoteParams) error
 	UpdatePostFiles(ctx context.Context, arg UpdatePostFilesParams) error
+	UpdatePostHashes(ctx context.Context, arg UpdatePostHashesParams) error
 	UpdatePostVote(ctx context.Context, arg UpdatePostVoteParams) error
 	UpdateUserEmail(ctx context.Context, arg UpdateUserEmailParams) error
 	UpsertCommentVote(ctx context.Context, arg UpsertCommentVoteParams) error

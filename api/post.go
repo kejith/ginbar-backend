@@ -55,31 +55,6 @@ func (server *Server) CreatePost(context *gin.Context) {
 	}
 	defer response.Body.Close()
 
-	var filePath string
-	var contentType string
-	var thumbnailFilePath string
-	switch fileType {
-	case "image":
-		filePath, thumbnailFilePath, err = utils.ProcessImageFromURL(response, fileFormat, server.directories)
-		if err != nil {
-			context.Error(err)
-			return
-		}
-
-		contentType = "image"
-
-		break
-	case "video":
-		filePath, thumbnailFilePath, err = utils.ProcessVideoFromURL(response, fileFormat, server.directories)
-		if err != nil {
-			context.Error(err)
-			return
-		}
-
-		contentType = fmt.Sprintf("%s/%s", fileType, fileFormat)
-		break
-	}
-
 	// read data from session
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
@@ -96,12 +71,63 @@ func (server *Server) CreatePost(context *gin.Context) {
 	}
 
 	parameters := db.CreatePostParams{
-		Url:               form.URL,
-		Filename:          filepath.Base(filePath),
-		ThumbnailFilename: filepath.Base(thumbnailFilePath),
-		UserName:          userName,
-		ContentType:       contentType,
+		Url: form.URL,
+
+		UserName: userName,
 	}
+	var processResult utils.ImageProcessResult
+	switch fileType {
+	case "image":
+		processResult, err = utils.ProcessImageFromURL(response, fileFormat, server.directories)
+		params := db.GetPossibleDuplicatePostsParams{
+			Column1: processResult.PerceptionHash.GetHash()[0],
+			Column2: processResult.PerceptionHash.GetHash()[1],
+			Column3: processResult.PerceptionHash.GetHash()[2],
+			Column4: processResult.PerceptionHash.GetHash()[3],
+		}
+
+		duplicatePosts, err := server.store.GetPossibleDuplicatePosts(context, params)
+
+		if err != nil {
+			panic(err)
+		}
+
+		if len(duplicatePosts) > 0 {
+			context.JSON(http.StatusOK, gin.H{
+				"status": "possibleDuplicatesFound",
+				"posts":  duplicatePosts,
+			})
+
+			return
+		}
+
+		if err != nil {
+			context.Error(err)
+			return
+		}
+
+		parameters.PHash0 = processResult.PerceptionHash.GetHash()[0]
+		parameters.PHash1 = processResult.PerceptionHash.GetHash()[1]
+		parameters.PHash2 = processResult.PerceptionHash.GetHash()[2]
+		parameters.PHash3 = processResult.PerceptionHash.GetHash()[3]
+
+		parameters.ContentType = "image"
+
+		break
+	case "video":
+		processResult.Filename, processResult.ThumbnailFilename, err = utils.ProcessVideoFromURL(response, fileFormat, server.directories)
+
+		if err != nil {
+			context.Error(err)
+			return
+		}
+
+		parameters.ContentType = fmt.Sprintf("%s/%s", fileType, fileFormat)
+		break
+	}
+
+	parameters.Filename = filepath.Base(processResult.Filename)
+	parameters.ThumbnailFilename = filepath.Base(processResult.ThumbnailFilename)
 
 	res, err := server.store.CreatePost(context, parameters)
 	if err != nil {
@@ -162,29 +188,35 @@ func (server *Server) UploadPost(context *gin.Context) {
 	mimeComponents := strings.Split(mimeType, "/")
 	fileType, fileFormat := mimeComponents[0], mimeComponents[1]
 
-	var fileName string
-	var thumbnailFilename string
-	var contentType string
+	parameters := db.CreatePostParams{
+		UserName: userName,
+	}
+
 	switch fileType {
 	case "video":
-		fileName, thumbnailFilename, err = utils.ProcessUploadedVideo(&file, fileFormat, server.directories)
-		contentType = mimeType
+		parameters.Filename, parameters.ThumbnailFilename, err = utils.ProcessUploadedVideo(&file, fileFormat, server.directories)
+		parameters.ContentType = mimeType
 		// everything worked fine so we send a Status code 204
 		// TODO implement Status 201
 		context.Status(http.StatusNoContent)
 		break
 	case "image":
-		fileName, thumbnailFilename, err = utils.ProcessImageFromMultipart(&file, fileFormat, server.directories)
-		contentType = "image"
-		break
-	}
+		processResult, err := utils.ProcessImageFromMultipart(&file, fileFormat, server.directories)
 
-	parameters := db.CreatePostParams{
-		Url:               "",
-		Filename:          fileName,
-		ThumbnailFilename: thumbnailFilename,
-		UserName:          userName,
-		ContentType:       contentType,
+		if err != nil {
+			panic(err)
+		}
+
+		parameters.Filename = filepath.Base(processResult.Filename)
+		parameters.ThumbnailFilename = filepath.Base(processResult.ThumbnailFilename)
+		parameters.ContentType = "image"
+
+		parameters.PHash0 = processResult.PerceptionHash.GetHash()[0]
+		parameters.PHash1 = processResult.PerceptionHash.GetHash()[1]
+		parameters.PHash2 = processResult.PerceptionHash.GetHash()[2]
+		parameters.PHash3 = processResult.PerceptionHash.GetHash()[3]
+
+		break
 	}
 
 	res, err := server.store.CreatePost(context, parameters)

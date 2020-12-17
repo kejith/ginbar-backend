@@ -11,9 +11,9 @@ import (
 
 const createPost = `-- name: CreatePost :execresult
 INSERT INTO posts 
-    (url, filename, thumbnail_filename, user_name, content_type)
+    (url, filename, thumbnail_filename, user_name, content_type, p_hash_0, p_hash_1, p_hash_2, p_hash_3)
 VALUES 
-    (?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreatePostParams struct {
@@ -22,6 +22,10 @@ type CreatePostParams struct {
 	ThumbnailFilename string `json:"thumbnail_filename"`
 	UserName          string `json:"user_name"`
 	ContentType       string `json:"content_type"`
+	PHash0            uint64 `json:"p_hash_0"`
+	PHash1            uint64 `json:"p_hash_1"`
+	PHash2            uint64 `json:"p_hash_2"`
+	PHash3            uint64 `json:"p_hash_3"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (sql.Result, error) {
@@ -31,6 +35,10 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (sql.Res
 		arg.ThumbnailFilename,
 		arg.UserName,
 		arg.ContentType,
+		arg.PHash0,
+		arg.PHash1,
+		arg.PHash2,
+		arg.PHash3,
 	)
 }
 
@@ -48,7 +56,7 @@ func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 
 const getAllPosts = `-- name: GetAllPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts
 `
@@ -73,6 +81,60 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 			&i.ContentType,
 			&i.Score,
 			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
+			&i.UserName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getImagePosts = `-- name: GetImagePosts :many
+SELECT
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+FROM
+	posts 
+WHERE
+	content_type = "image"
+ORDER BY
+	posts.id DESC
+`
+
+func (q *Queries) GetImagePosts(ctx context.Context) ([]Post, error) {
+	rows, err := q.db.QueryContext(ctx, getImagePosts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Post{}
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Url,
+			&i.Filename,
+			&i.ThumbnailFilename,
+			&i.ContentType,
+			&i.Score,
+			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -90,7 +152,7 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 
 const getNewerPosts = `-- name: GetNewerPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -128,6 +190,10 @@ func (q *Queries) GetNewerPosts(ctx context.Context, arg GetNewerPostsParams) ([
 			&i.ContentType,
 			&i.Score,
 			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -145,7 +211,7 @@ func (q *Queries) GetNewerPosts(ctx context.Context, arg GetNewerPostsParams) ([
 
 const getOlderPosts = `-- name: GetOlderPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -183,7 +249,97 @@ func (q *Queries) GetOlderPosts(ctx context.Context, arg GetOlderPostsParams) ([
 			&i.ContentType,
 			&i.Score,
 			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
 			&i.UserName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const getPossibleDuplicatePosts = `-- name: GetPossibleDuplicatePosts :many
+SELECT 
+	posts.id, posts.created_at, posts.updated_at, posts.deleted_at, posts.url, posts.filename, posts.thumbnail_filename, posts.content_type, posts.score, posts.user_level, posts.p_hash_0, posts.p_hash_1, posts.p_hash_2, posts.p_hash_3, posts.user_name, 
+    (
+		bit_count(? ^ p_hash_0) +
+        bit_count(? ^ p_hash_1) +
+        bit_count(? ^ p_hash_2) +
+        bit_count(? ^ p_hash_3) 
+        
+	) as hamming_distance
+    from posts
+    having hamming_distance < 50
+    order by hamming_distance desc
+`
+
+type GetPossibleDuplicatePostsParams struct {
+	Column1 interface{} `json:"column_1"`
+	Column2 interface{} `json:"column_2"`
+	Column3 interface{} `json:"column_3"`
+	Column4 interface{} `json:"column_4"`
+}
+
+type GetPossibleDuplicatePostsRow struct {
+	ID                int32        `json:"id"`
+	CreatedAt         time.Time    `json:"created_at"`
+	UpdatedAt         time.Time    `json:"updated_at"`
+	DeletedAt         sql.NullTime `json:"deleted_at"`
+	Url               string       `json:"url"`
+	Filename          string       `json:"filename"`
+	ThumbnailFilename string       `json:"thumbnail_filename"`
+	ContentType       string       `json:"content_type"`
+	Score             int32        `json:"score"`
+	UserLevel         int32        `json:"user_level"`
+	PHash0            uint64       `json:"p_hash_0"`
+	PHash1            uint64       `json:"p_hash_1"`
+	PHash2            uint64       `json:"p_hash_2"`
+	PHash3            uint64       `json:"p_hash_3"`
+	UserName          string       `json:"user_name"`
+	HammingDistance   int32        `json:"hamming_distance"`
+}
+
+func (q *Queries) GetPossibleDuplicatePosts(ctx context.Context, arg GetPossibleDuplicatePostsParams) ([]GetPossibleDuplicatePostsRow, error) {
+	rows, err := q.db.QueryContext(ctx, getPossibleDuplicatePosts,
+		arg.Column1,
+		arg.Column2,
+		arg.Column3,
+		arg.Column4,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []GetPossibleDuplicatePostsRow{}
+	for rows.Next() {
+		var i GetPossibleDuplicatePostsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Url,
+			&i.Filename,
+			&i.ThumbnailFilename,
+			&i.ContentType,
+			&i.Score,
+			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
+			&i.UserName,
+			&i.HammingDistance,
 		); err != nil {
 			return nil, err
 		}
@@ -200,7 +356,7 @@ func (q *Queries) GetOlderPosts(ctx context.Context, arg GetOlderPostsParams) ([
 
 const getPost = `-- name: GetPost :one
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -228,6 +384,10 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (Post, error) 
 		&i.ContentType,
 		&i.Score,
 		&i.UserLevel,
+		&i.PHash0,
+		&i.PHash1,
+		&i.PHash2,
+		&i.PHash3,
 		&i.UserName,
 	)
 	return i, err
@@ -235,7 +395,7 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (Post, error) 
 
 const getPosts = `-- name: GetPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -266,6 +426,10 @@ func (q *Queries) GetPosts(ctx context.Context, userLevel int32) ([]Post, error)
 			&i.ContentType,
 			&i.Score,
 			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -283,7 +447,7 @@ func (q *Queries) GetPosts(ctx context.Context, userLevel int32) ([]Post, error)
 
 const getPostsByUser = `-- name: GetPostsByUser :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, user_name 
+	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -318,6 +482,10 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 			&i.ContentType,
 			&i.Score,
 			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
 			&i.UserName,
 		); err != nil {
 			return nil, err
@@ -335,7 +503,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 
 const getVotedPost = `-- name: GetVotedPost :one
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.user_name, 
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name, 
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -364,6 +532,10 @@ type GetVotedPostRow struct {
 	ContentType       string       `json:"content_type"`
 	Score             int32        `json:"score"`
 	UserLevel         int32        `json:"user_level"`
+	PHash0            uint64       `json:"p_hash_0"`
+	PHash1            uint64       `json:"p_hash_1"`
+	PHash2            uint64       `json:"p_hash_2"`
+	PHash3            uint64       `json:"p_hash_3"`
 	UserName          string       `json:"user_name"`
 	Upvoted           interface{}  `json:"upvoted"`
 }
@@ -382,6 +554,10 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 		&i.ContentType,
 		&i.Score,
 		&i.UserLevel,
+		&i.PHash0,
+		&i.PHash1,
+		&i.PHash2,
+		&i.PHash3,
 		&i.UserName,
 		&i.Upvoted,
 	)
@@ -390,7 +566,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 
 const getVotedPosts = `-- name: GetVotedPosts :many
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.user_name,
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name,
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -417,6 +593,10 @@ type GetVotedPostsRow struct {
 	ContentType       string       `json:"content_type"`
 	Score             int32        `json:"score"`
 	UserLevel         int32        `json:"user_level"`
+	PHash0            uint64       `json:"p_hash_0"`
+	PHash1            uint64       `json:"p_hash_1"`
+	PHash2            uint64       `json:"p_hash_2"`
+	PHash3            uint64       `json:"p_hash_3"`
 	UserName          string       `json:"user_name"`
 	Upvoted           interface{}  `json:"upvoted"`
 }
@@ -441,6 +621,10 @@ func (q *Queries) GetVotedPosts(ctx context.Context, arg GetVotedPostsParams) ([
 			&i.ContentType,
 			&i.Score,
 			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
 			&i.UserName,
 			&i.Upvoted,
 		); err != nil {
@@ -475,5 +659,36 @@ type UpdatePostFilesParams struct {
 
 func (q *Queries) UpdatePostFiles(ctx context.Context, arg UpdatePostFilesParams) error {
 	_, err := q.db.ExecContext(ctx, updatePostFiles, arg.Filename, arg.ThumbnailFilename, arg.ID)
+	return err
+}
+
+const updatePostHashes = `-- name: UpdatePostHashes :exec
+UPDATE
+	posts
+SET
+	p_hash_0 = ?,
+	p_hash_1 = ?,
+	p_hash_2 = ?,
+	p_hash_3 = ?
+WHERE
+	id = ?
+`
+
+type UpdatePostHashesParams struct {
+	PHash0 uint64 `json:"p_hash_0"`
+	PHash1 uint64 `json:"p_hash_1"`
+	PHash2 uint64 `json:"p_hash_2"`
+	PHash3 uint64 `json:"p_hash_3"`
+	ID     int32  `json:"id"`
+}
+
+func (q *Queries) UpdatePostHashes(ctx context.Context, arg UpdatePostHashesParams) error {
+	_, err := q.db.ExecContext(ctx, updatePostHashes,
+		arg.PHash0,
+		arg.PHash1,
+		arg.PHash2,
+		arg.PHash3,
+		arg.ID,
+	)
 	return err
 }

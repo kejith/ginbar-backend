@@ -14,6 +14,10 @@ CREATE TABLE posts (
   content_type VARCHAR(255) NOT NULL,
   score int NOT NULL DEFAULT 0,
   user_level INT UNSIGNED NOT NULL DEFAULT 0,
+  p_hash_0 bigint UNSIGNED  NOT NULL DEFAULT 0,
+  p_hash_1 bigint UNSIGNED  NOT NULL DEFAULT 0,
+  p_hash_2 bigint UNSIGNED  NOT NULL DEFAULT 0,
+  p_hash_3 bigint UNSIGNED  NOT NULL DEFAULT 0,
 
   /* foreign key*/
   user_name VARCHAR(255) NOT NULL

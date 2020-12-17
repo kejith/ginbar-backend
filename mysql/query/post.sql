@@ -10,6 +10,17 @@ ORDER BY
 	posts.id DESC
 LIMIT 50;
 
+/* name: GetImagePosts :many */
+SELECT
+	* 
+FROM
+	posts 
+WHERE
+	content_type = "image"
+ORDER BY
+	posts.id DESC;
+
+
 
 /* name: GetNewerPosts :many */
 SELECT
@@ -63,6 +74,17 @@ SET
 WHERE
 	id = ?;
 
+/* name: UpdatePostHashes :exec */
+UPDATE
+	posts
+SET
+	p_hash_0 = ?,
+	p_hash_1 = ?,
+	p_hash_2 = ?,
+	p_hash_3 = ?
+WHERE
+	id = ?;
+
 /* name: GetPostsByUser :many */
 SELECT
 	* 
@@ -76,9 +98,23 @@ ORDER BY posts.id DESC;
 
 /* name: CreatePost :execresult */
 INSERT INTO posts 
-    (url, filename, thumbnail_filename, user_name, content_type)
+    (url, filename, thumbnail_filename, user_name, content_type, p_hash_0, p_hash_1, p_hash_2, p_hash_3)
 VALUES 
-    (?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+/* name: GetPossibleDuplicatePosts :many */
+SELECT 
+	posts.*, 
+    (
+		bit_count(? ^ p_hash_0) +
+        bit_count(? ^ p_hash_1) +
+        bit_count(? ^ p_hash_2) +
+        bit_count(? ^ p_hash_3) 
+        
+	) as hamming_distance
+    from posts
+    having hamming_distance < 50
+    order by hamming_distance desc;
 
 /* name: DeletePost :exec */
 UPDATE posts 

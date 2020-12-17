@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/boj/redistore v0.0.0-20180917114910-cd5dcc76aeff // indirect
+	github.com/corona10/goimagehash v1.0.3
 	github.com/gin-contrib/cache v1.1.0
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/contrib v0.0.0-20201101042839-6a891bf89f19

@@ -72,7 +72,8 @@ func NewServer(store db.Store) (*Server, error) {
 	groupUtils := server.router.Group("/utils")
 	groupUtils.Use(gin.Logger())
 	{
-		groupUtils.GET("/thumbnails/regenerate", server.RegenerateThumbnails)
+		groupUtils.GET("/regenerate/thumbnails", server.RegenerateThumbnails)
+		groupUtils.GET("/regenerate/hashes", server.RecalculateHashes)
 		groupUtils.GET("/reprocess/urls", server.RedownloadAndCompressImages)
 	}
 

@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
+	"image/jpeg"
 	"io/ioutil"
 	"log"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/gin"
 )
 
@@ -65,7 +68,7 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 
 // RedownloadAndCompressImages ...
 func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
-	posts, err := server.store.GetAllPosts(context)
+	posts, err := server.store.GetImagePosts(context)
 	if err != nil {
 		log.Print(err)
 		return
@@ -81,7 +84,7 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 
 		if post.ContentType == "image" && url != "" {
 			response, _, fileFormat, err := utils.LoadFileFromURL(url)
-			filename, thumbnailFilename, err := utils.ProcessImageFromURL(
+			processResult, err := utils.ProcessImageFromURL(
 				response,
 				fileFormat,
 				server.directories,
@@ -92,8 +95,8 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 			}
 
 			params := db.UpdatePostFilesParams{
-				Filename:          filepath.Base(filename),
-				ThumbnailFilename: filepath.Base(thumbnailFilename),
+				Filename:          filepath.Base(processResult.Filename),
+				ThumbnailFilename: filepath.Base(processResult.ThumbnailFilename),
 				ID:                int32(post.ID),
 			}
 
@@ -104,4 +107,59 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 		}
 	}
 
+}
+
+// RecalculateHashes iterates over every existing Image Post and calculates
+// the hashes and updates its value in the storage
+func (server *Server) RecalculateHashes(context *gin.Context) {
+	posts, err := server.store.GetImagePosts(context)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	length := len(posts)
+	count := 0
+	for _, post := range posts {
+		count = 1 + count
+
+		hash, _ := PerceptionHashFromFile(filepath.Join(server.directories.Image, post.Filename))
+		fmt.Println(count, length, post.Filename, hash)
+
+		params := db.UpdatePostHashesParams{
+			ID:     int32(post.ID),
+			PHash0: hash[0],
+			PHash1: hash[1],
+			PHash2: hash[2],
+			PHash3: hash[3],
+		}
+
+		err = server.store.UpdatePostHashes(context, params)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	}
+}
+
+// PerceptionHashFromFile calculates a perception hash from a given image
+// file
+func PerceptionHashFromFile(filepath string) (hashes []uint64, err error) {
+	file, err := os.Open(filepath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	img, err := jpeg.Decode(file)
+	if err != nil {
+		return nil, err
+	}
+
+	imageHash, err := goimagehash.ExtPerceptionHash(img, 16, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	return imageHash.GetHash(), nil
 }

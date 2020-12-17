@@ -16,6 +16,7 @@ import (
 
 	//"encoding/base64"
 
+	"github.com/corona10/goimagehash"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
 
@@ -91,10 +92,22 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 	return
 }
 
+// ImageProcessResult yields the return data for the image processing function
+type ImageProcessResult struct {
+	Filename          string
+	ThumbnailFilename string
+	PerceptionHash    *goimagehash.ExtImageHash
+}
+
 // ProcessImage saves an image to the disk and creates a thumbnail
-func ProcessImage(img *image.Image, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
-	fileName = fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
-	//imgFileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), "png") // TODO put user id into filename to be save for duplicates
+func ProcessImage(img *image.Image, format string, dirs Directories) (result ImageProcessResult, err error) {
+	fileName := fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
+
+	hash, err := goimagehash.ExtPerceptionHash(*img, 16, 16)
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), img, 75)
 	if err != nil {
 		if imgFile != nil {
@@ -102,7 +115,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (fileName s
 			imgFile.Close()
 		}
 
-		return "", "", err
+		return ImageProcessResult{}, err
 	}
 	defer imgFile.Close()
 
@@ -111,7 +124,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (fileName s
 		os.Remove(imgFile.Name())
 		imgFile.Close()
 
-		return "", "", err
+		return ImageProcessResult{}, err
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
@@ -125,17 +138,17 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (fileName s
 		os.Remove(imgFile.Name())
 		imgFile.Close()
 
-		return "", "", err
+		return ImageProcessResult{}, err
 	}
 
-	return imgFile.Name(), thumbnailFile.Name(), nil
+	return ImageProcessResult{Filename: imgFile.Name(), ThumbnailFilename: thumbnailFile.Name(), PerceptionHash: hash}, nil
 }
 
 // ProcessImageFromURL ... TODO
-func ProcessImageFromURL(response *http.Response, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
+func ProcessImageFromURL(response *http.Response, format string, dirs Directories) (result ImageProcessResult, err error) {
 	img, _, err := image.Decode(response.Body)
 	if err != nil {
-		return "", "", err
+		return ImageProcessResult{}, err
 	}
 
 	return ProcessImage(&img, format, dirs)
@@ -143,13 +156,13 @@ func ProcessImageFromURL(response *http.Response, format string, dirs Directorie
 }
 
 // ProcessImageFromMultipart ... TODO
-func ProcessImageFromMultipart(file *multipart.File, format string, dirs Directories) (fileName string, thumbnailFileName string, err error) {
+func ProcessImageFromMultipart(file *multipart.File, format string, dirs Directories) (result ImageProcessResult, err error) {
 	img, _, err := image.Decode(*file)
 	if err != nil {
-		return "", "", err
+		return ImageProcessResult{}, err
 	}
-	filePath, thumbnailFilePath, err := ProcessImage(&img, format, dirs)
-	return filepath.Base(filePath), filepath.Base(thumbnailFilePath), err
+	processResult, err := ProcessImage(&img, format, dirs)
+	return processResult, err
 }
 
 // SaveImage the image to the disk

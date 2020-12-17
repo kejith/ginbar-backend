@@ -10,3 +10,12 @@ packages:
           emit_interface: true
           emit_exact_table_names: false
           emit_empty_slices: true
+overrides:
+        - column: "posts.p_hash_0"
+          go_type: "uint64"
+        - column: "posts.p_hash_1"
+          go_type: "uint64"
+        - column: "posts.p_hash_2"
+          go_type: "uint64"
+        - column: "posts.p_hash_3"
+          go_type: "uint64"

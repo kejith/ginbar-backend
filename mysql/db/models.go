@@ -39,6 +39,10 @@ type Post struct {
 	ContentType       string       `json:"content_type"`
 	Score             int32        `json:"score"`
 	UserLevel         int32        `json:"user_level"`
+	PHash0            uint64       `json:"p_hash_0"`
+	PHash1            uint64       `json:"p_hash_1"`
+	PHash2            uint64       `json:"p_hash_2"`
+	PHash3            uint64       `json:"p_hash_3"`
 	UserName          string       `json:"user_name"`
 }
 
