@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"ginbar/api/models"
 	"ginbar/mysql/db"
@@ -34,48 +35,80 @@ type postForm struct {
 // Handlers
 // --------------------
 
-// CreatePost inserts a user into the database
-func (server *Server) CreatePost(context *gin.Context) {
-	var err error
+// CreateMultiplePosts inserts multiple posts into the database
+func (server *Server) CreateMultiplePosts(context *gin.Context) {
 	var form postForm
 
 	// Set Status Codes 500 for failed service, if we get to the end
 	// completly Status Code 204 will be set
 	context.Status(http.StatusInternalServerError)
-	err = context.ShouldBind(&form)
+	err := context.ShouldBind(&form)
 	if err != nil {
 		context.Error(err)
 		return
 	}
 
-	response, fileType, fileFormat, err := utils.LoadFileFromURL(form.URL)
+	urls := strings.Split(form.URL, ",")
+
+	if len(urls) < 1 {
+		panic(errors.New("No URL transmitted"))
+	}
+
+	var posts = make([](*db.Post), len(urls))
+	var total = len(urls)
+	for i, url := range urls {
+		var start = time.Now()
+		fmt.Print(fmt.Sprintf("[%v/%v] %s", i, total, url))
+		post := server.createPostFromURL(context, url)
+		if post != nil {
+			posts[i] = post
+		}
+		fmt.Print(fmt.Sprintf(" %v\n", time.Since(start)))
+	}
+
+	// we mutated posts so we need to recache the getPosts response
+	session := sessions.Default(context)
+	userID, ok := session.Get("userid").(int32)
+	if !ok {
+		userID = 0
+	}
+	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/#%v", userID)))
+
+	// everything worked fine so we send a Status code 204
+	// TODO implement Status 201
+	context.JSON(http.StatusOK, gin.H{
+		"status": "postCreated",
+		"posts":  posts,
+	})
+
+}
+
+func (server *Server) createPostFromURL(context *gin.Context, url string) *db.Post {
+	var err error
+
+	response, fileType, fileFormat, err := utils.LoadFileFromURL(url)
 	if err != nil {
-		context.Error(err)
-		return
+		fmt.Println(err)
+		return nil
 	}
 	defer response.Body.Close()
 
 	// read data from session
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
-
 	userLevel, ok := session.Get("userlevel").(int32)
 	if !ok {
 		userLevel = 0
 	}
 
 	if !ok {
-		context.Status(http.StatusInternalServerError)
-		context.Error(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-		return
+		fmt.Println(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
+		return nil
 	}
 
-	parameters := db.CreatePostParams{
-		Url: form.URL,
-
-		UserName: userName,
-	}
+	parameters := db.CreatePostParams{Url: url, UserName: userName}
 	var processResult utils.ImageProcessResult
+
 	switch fileType {
 	case "image":
 		processResult, err = utils.ProcessImageFromURL(response, fileFormat, server.directories)
@@ -89,7 +122,8 @@ func (server *Server) CreatePost(context *gin.Context) {
 		duplicatePosts, err := server.store.GetPossibleDuplicatePosts(context, params)
 
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
+			return nil
 		}
 
 		if len(duplicatePosts) > 0 {
@@ -98,12 +132,12 @@ func (server *Server) CreatePost(context *gin.Context) {
 				"posts":  duplicatePosts,
 			})
 
-			return
+			return nil
 		}
 
 		if err != nil {
 			context.Error(err)
-			return
+			return nil
 		}
 
 		parameters.PHash0 = processResult.PerceptionHash.GetHash()[0]
@@ -119,7 +153,7 @@ func (server *Server) CreatePost(context *gin.Context) {
 
 		if err != nil {
 			context.Error(err)
-			return
+			return nil
 		}
 
 		parameters.ContentType = fmt.Sprintf("%s/%s", fileType, fileFormat)
@@ -131,12 +165,14 @@ func (server *Server) CreatePost(context *gin.Context) {
 
 	res, err := server.store.CreatePost(context, parameters)
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return nil
 	}
 
 	postID, err := res.LastInsertId()
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return nil
 	}
 
 	post, err := server.store.GetPost(context, db.GetPostParams{
@@ -144,17 +180,38 @@ func (server *Server) CreatePost(context *gin.Context) {
 		UserLevel: userLevel,
 	})
 
+	return &post
+}
+
+// CreatePost inserts a post into the database
+func (server *Server) CreatePost(context *gin.Context) {
+	var form postForm
+
+	// Set Status Codes 500 for failed service, if we get to the end
+	// completly Status Code 204 will be set
+	context.Status(http.StatusInternalServerError)
+	err := context.ShouldBind(&form)
+	if err != nil {
+		context.Error(err)
+		return
+	}
+
+	post := server.createPostFromURL(context, form.URL)
+
+	// we mutated posts so we need to recache the getPosts response
+	session := sessions.Default(context)
 	userID, ok := session.Get("userid").(int32)
 	if !ok {
 		userID = 0
 	}
-
-	// we mutated posts so we need to recache the getPosts response
 	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/#%v", userID)))
 
 	// everything worked fine so we send a Status code 204
 	// TODO implement Status 201
-	context.JSON(http.StatusOK, post)
+	context.JSON(http.StatusOK, gin.H{
+		"status": "postCreated",
+		"posts":  []db.Post{*post},
+	})
 
 }
 

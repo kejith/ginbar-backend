@@ -42,8 +42,8 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 		fileName := post.Filename
 
 		i = i + 1
+		fmt.Println(i, length, filepath.Join(imageDir, fileName))
 		if post.ContentType == "image" {
-			fmt.Println(i, length, filepath.Join(imageDir, fileName))
 			err = utils.CreateThumbnailFromFile(
 				filepath.Join(imageDir, fileName),
 				filepath.Join(thumbDir, fileName))

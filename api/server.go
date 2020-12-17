@@ -91,6 +91,7 @@ func NewServer(store db.Store) (*Server, error) {
 		// groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
 		groupPost.POST("/create", server.CreatePost)
+		groupPost.POST("/create/multiple", server.CreateMultiplePosts)
 		groupPost.POST("/upload", server.UploadPost)
 		groupPost.POST("/vote", server.VotePost)
 	}
@@ -176,8 +177,8 @@ func AuthenticationRequired() gin.HandlerFunc {
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
-	return server.router.Run(address)
-	// return server.router.RunTLS(":443", "./kejith.de.pem", "./kejith.de.key")
+	// return server.router.Run(address)
+	return server.router.RunTLS(":443", "./kejith.de.pem", "./kejith.de.key")
 }
 
 func errorResponse(err error) gin.H {
