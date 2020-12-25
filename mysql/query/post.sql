@@ -98,9 +98,20 @@ ORDER BY posts.id DESC;
 
 /* name: CreatePost :execresult */
 INSERT INTO posts 
-    (url, filename, thumbnail_filename, user_name, content_type, p_hash_0, p_hash_1, p_hash_2, p_hash_3)
+    (
+		url, 
+		filename, 
+		thumbnail_filename, 
+		user_name, 
+		content_type, 
+		p_hash_0, 
+		p_hash_1, 
+		p_hash_2, 
+		p_hash_3, 
+		uploaded_filename
+	)
 VALUES 
-    (?, ?, ?, ?, ?, ?, ?, ?, ?);
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 /* name: GetPossibleDuplicatePosts :many */
 SELECT 

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"ginbar/api/utils"
-	_cache "ginbar/api/utils/cache"
 	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache/persistence"
@@ -41,6 +40,7 @@ func NewServer(store db.Store) (*Server, error) {
 		Thumbnail: filepath.Join("public", "images", "thumbnails"),
 		Video:     filepath.Join(cwd, "public", "videos"),
 		Tmp:       filepath.Join(cwd, "tmp"),
+		Upload:    filepath.Join(cwd, "public", "upload"),
 	}
 
 	// create Server
@@ -58,7 +58,7 @@ func NewServer(store db.Store) (*Server, error) {
 	// Middleware
 
 	server.router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://kejith.de"},
+		AllowOrigins:     []string{"https://kejith.de"},
 		AllowMethods:     []string{"POST", "GET"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},
@@ -85,8 +85,11 @@ func NewServer(store db.Store) (*Server, error) {
 	// APi/POST
 	groupPost := groupAPI.Group("/post")
 	{
-		groupPost.GET("/", _cache.PageByUser(server.postsResponseCache, time.Minute, server.GetAll))
-		groupPost.GET("/:post_id", _cache.PageByUser(server.postsResponseCache, time.Minute*30, server.Get))
+		// TODO fix cache by user
+		// groupPost.GET("/", _cache.PageByUser(server.postsResponseCache, time.Minute, server.GetAll))
+		// groupPost.GET("/:post_id", _cache.PageByUser(server.postsResponseCache, time.Minute*30, server.Get))
+		groupPost.GET("/", server.GetAll)
+		groupPost.GET("/:post_id", server.Get)
 		// groupPost.GET("/", server.GetAll)
 		// groupPost.GET("/:post_id", server.Get)
 		groupPost.GET("/:post_id/comments", server.GetComments)
@@ -177,8 +180,8 @@ func AuthenticationRequired() gin.HandlerFunc {
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
-	// return server.router.Run(address)
-	return server.router.RunTLS(":443", "./kejith.de.pem", "./kejith.de.key")
+	//return server.router.Run(address)
+	return server.router.RunTLS(":443", "./fullchain.pem", "./privkey.pem")
 }
 
 func errorResponse(err error) gin.H {

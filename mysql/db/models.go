@@ -34,6 +34,7 @@ type Post struct {
 	UpdatedAt         time.Time    `json:"updated_at"`
 	DeletedAt         sql.NullTime `json:"deleted_at"`
 	Url               string       `json:"url"`
+	UploadedFilename  string       `json:"uploaded_filename"`
 	Filename          string       `json:"filename"`
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`

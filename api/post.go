@@ -59,7 +59,8 @@ func (server *Server) CreateMultiplePosts(context *gin.Context) {
 	for i, url := range urls {
 		var start = time.Now()
 		fmt.Print(fmt.Sprintf("[%v/%v] %s", i, total, url))
-		post := server.createPostFromURL(context, url)
+		post, reposts := server.createPostFromURL(context, url)
+		_ = reposts
 		if post != nil {
 			posts[i] = post
 		}
@@ -83,13 +84,13 @@ func (server *Server) CreateMultiplePosts(context *gin.Context) {
 
 }
 
-func (server *Server) createPostFromURL(context *gin.Context, url string) *db.Post {
+func (server *Server) createPostFromURL(context *gin.Context, url string) (*db.Post, []db.GetPossibleDuplicatePostsRow) {
 	var err error
 
 	response, fileType, fileFormat, err := utils.LoadFileFromURL(url)
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return nil, nil
 	}
 	defer response.Body.Close()
 
@@ -103,15 +104,21 @@ func (server *Server) createPostFromURL(context *gin.Context, url string) *db.Po
 
 	if !ok {
 		fmt.Println(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-		return nil
+		return nil, nil
 	}
 
 	parameters := db.CreatePostParams{Url: url, UserName: userName}
-	var processResult utils.ImageProcessResult
+	processResult := &utils.ImageProcessResult{}
 
+	var duplicatePosts []db.GetPossibleDuplicatePostsRow
 	switch fileType {
 	case "image":
-		processResult, err = utils.ProcessImageFromURL(response, fileFormat, server.directories)
+		processResult, err = utils.ProcessImageFromURL(url, "", server.directories)
+
+		if err != nil {
+			panic(err)
+		}
+
 		params := db.GetPossibleDuplicatePostsParams{
 			Column1: processResult.PerceptionHash.GetHash()[0],
 			Column2: processResult.PerceptionHash.GetHash()[1],
@@ -119,25 +126,19 @@ func (server *Server) createPostFromURL(context *gin.Context, url string) *db.Po
 			Column4: processResult.PerceptionHash.GetHash()[3],
 		}
 
-		duplicatePosts, err := server.store.GetPossibleDuplicatePosts(context, params)
+		duplicatePosts, err = server.store.GetPossibleDuplicatePosts(context, params)
+		if len(duplicatePosts) > 0 {
+			return nil, duplicatePosts
+		}
 
 		if err != nil {
 			fmt.Println(err)
-			return nil
-		}
-
-		if len(duplicatePosts) > 0 {
-			context.JSON(http.StatusOK, gin.H{
-				"status": "possibleDuplicatesFound",
-				"posts":  duplicatePosts,
-			})
-
-			return nil
+			return nil, nil
 		}
 
 		if err != nil {
 			context.Error(err)
-			return nil
+			return nil, nil
 		}
 
 		parameters.PHash0 = processResult.PerceptionHash.GetHash()[0]
@@ -153,7 +154,7 @@ func (server *Server) createPostFromURL(context *gin.Context, url string) *db.Po
 
 		if err != nil {
 			context.Error(err)
-			return nil
+			return nil, nil
 		}
 
 		parameters.ContentType = fmt.Sprintf("%s/%s", fileType, fileFormat)
@@ -166,21 +167,23 @@ func (server *Server) createPostFromURL(context *gin.Context, url string) *db.Po
 	res, err := server.store.CreatePost(context, parameters)
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return nil, nil
 	}
 
 	postID, err := res.LastInsertId()
 	if err != nil {
 		fmt.Println(err)
-		return nil
+		return nil, nil
 	}
+
+	fmt.Println("PostID after insertion: ", postID)
 
 	post, err := server.store.GetPost(context, db.GetPostParams{
 		ID:        int32(postID),
 		UserLevel: userLevel,
 	})
 
-	return &post
+	return &post, duplicatePosts
 }
 
 // CreatePost inserts a post into the database
@@ -196,7 +199,14 @@ func (server *Server) CreatePost(context *gin.Context) {
 		return
 	}
 
-	post := server.createPostFromURL(context, form.URL)
+	post, reposts := server.createPostFromURL(context, form.URL)
+	if len(reposts) > 0 {
+		context.JSON(http.StatusOK, gin.H{
+			"status": "possibleDuplicatesFound",
+			"posts":  reposts,
+		})
+		return
+	}
 
 	// we mutated posts so we need to recache the getPosts response
 	session := sessions.Default(context)
@@ -208,10 +218,17 @@ func (server *Server) CreatePost(context *gin.Context) {
 
 	// everything worked fine so we send a Status code 204
 	// TODO implement Status 201
-	context.JSON(http.StatusOK, gin.H{
-		"status": "postCreated",
-		"posts":  []db.Post{*post},
-	})
+	if post != nil {
+		context.JSON(http.StatusOK, gin.H{
+			"status": "postCreated",
+			"posts":  []db.Post{*post},
+		})
+	} else {
+		context.JSON(http.StatusOK, gin.H{
+			"status": "postCreated",
+			"posts":  []db.Post{},
+		})
+	}
 
 }
 
@@ -272,6 +289,7 @@ func (server *Server) UploadPost(context *gin.Context) {
 		parameters.PHash1 = processResult.PerceptionHash.GetHash()[1]
 		parameters.PHash2 = processResult.PerceptionHash.GetHash()[2]
 		parameters.PHash3 = processResult.PerceptionHash.GetHash()[3]
+		parameters.UploadedFilename = processResult.UploadedFilename
 
 		break
 	}

@@ -25,7 +25,7 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 		return
 	}
 	imageDir := server.directories.Image
-	thumbDir := server.directories.Thumbnail
+	//thumbDir := server.directories.Thumbnail
 	videoDir := server.directories.Video
 
 	imageFiles, err := ioutil.ReadDir(imageDir)
@@ -42,16 +42,19 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 		fileName := post.Filename
 
 		i = i + 1
-		fmt.Println(i, length, filepath.Join(imageDir, fileName))
-		if post.ContentType == "image" {
-			err = utils.CreateThumbnailFromFile(
-				filepath.Join(imageDir, fileName),
-				filepath.Join(thumbDir, fileName))
 
-			if err != nil {
-				fmt.Println(err)
-			}
+		if post.ContentType == "image" {
+			// err = utils.CreateThumbnailFromFile(
+			// 	filepath.Join(imageDir, fileName),
+			// 	filepath.Join(thumbDir, fileName),
+			// 	server.directories,
+			// )
+
+			// if err != nil {
+			// 	fmt.Println(err)
+			// }
 		} else {
+			fmt.Println(i, length, filepath.Join(imageDir, fileName))
 			videoFilePath := filepath.Join(videoDir, fileName)
 			//fmt.Println(videoFilePath, strings.TrimSuffix(fileName, path.Ext(fileName)))
 			_, err := utils.CreateVideoThumbnail(
@@ -83,15 +86,15 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 		fmt.Println(count, length, url)
 
 		if post.ContentType == "image" && url != "" {
-			response, _, fileFormat, err := utils.LoadFileFromURL(url)
-			processResult, err := utils.ProcessImageFromURL(
-				response,
-				fileFormat,
+			//response, _, fileFormat, err := utils.LoadFileFromURL(url)
+			processResult, err := utils.ProcessImageNew(
+				post.Url,
 				server.directories,
 			)
 
 			if err != nil {
 				fmt.Println(err)
+				continue
 			}
 
 			params := db.UpdatePostFilesParams{

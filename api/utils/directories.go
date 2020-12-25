@@ -7,4 +7,5 @@ type Directories struct {
 	Thumbnail string
 	Video     string
 	Tmp       string
+	Upload    string
 }

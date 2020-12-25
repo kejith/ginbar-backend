@@ -34,10 +34,13 @@ func ProcessVideoFromURL(response *http.Response, format string, dirs Directorie
 	// save uploaded video file into video directory
 	videoFilePath, err := SaveVideoFromURL(response, name, format, dirs.Video)
 	if err != nil {
-		return "", "", err
+		return "", "", fmt.Errorf("Saving Video from URL: %v", err)
 	}
 
 	thumbnailFilename, err = CreateVideoThumbnail(videoFilePath, name, dirs)
+	if err != nil {
+		return "", "", fmt.Errorf("Creating Video Thumbnail: %v", err)
+	}
 
 	return filepath.Base(videoFilePath), thumbnailFilename, nil
 }
@@ -93,7 +96,7 @@ func CreateVideoThumbnail(inputFilePath string, name string, dirs Directories) (
 		return "", err
 	}
 
-	err = CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(dirs.Thumbnail, filename))
+	err = CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(dirs.Thumbnail, filename), dirs)
 
 	if err != nil {
 		return "", err

@@ -8,7 +8,8 @@ CREATE TABLE posts (
   deleted_at DATETIME DEFAULT NULL,
 
   /* body */  
-  url TEXT NOT NULL,
+  url TEXT NOT NULL DEFAULT "",
+  uploaded_filename TEXT NOT NULL DEFAULT "",
   filename VARCHAR(255) NOT NULL,
   thumbnail_filename VARCHAR(255) NOT NULL,
   content_type VARCHAR(255) NOT NULL,

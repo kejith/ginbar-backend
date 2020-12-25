@@ -1,14 +1,19 @@
 package utils
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"image"
+	"io"
 	"mime/multipart"
+	"os/exec"
+	"path"
 	"path/filepath"
+	"strings"
 
 	//"image/gif"
-	"bytes"
+
 	"image/jpeg"
 	"net/http"
 	"os"
@@ -17,10 +22,9 @@ import (
 	//"encoding/base64"
 
 	"github.com/corona10/goimagehash"
+	"github.com/harukasan/go-libwebp/webp"
 	"github.com/muesli/smartcrop"
 	"github.com/muesli/smartcrop/nfnt"
-
-	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
 // GetCropDimensions returns the Dimensions needed for Cropping
@@ -44,14 +48,15 @@ func GetCropDimensions(img *image.Image, width, height int) (int, int) {
 
 // CreateThumbnailFromFile Reads and inputFilePath Image from the Disk and Creates a Thumbnail
 // in the outputFilePath
-func CreateThumbnailFromFile(inputFilePath string, outputfilePath string) (err error) {
-	inputFile, err := os.Open(inputFilePath)
+func CreateThumbnailFromFile(inputFilePath string, outputfilePath string, dirs Directories) (err error) {
+
+	sourceFile, err := os.Open(inputFilePath)
 	if err != nil {
 		return err
 	}
-	defer inputFile.Close()
+	defer sourceFile.Close()
 
-	img, err := jpeg.Decode(inputFile)
+	img, _, err := image.Decode(sourceFile)
 	if err != nil {
 		return err
 	}
@@ -61,14 +66,24 @@ func CreateThumbnailFromFile(inputFilePath string, outputfilePath string) (err e
 		return err
 	}
 
-	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(outputfilePath, &imgCropped, 75)
+	tmpThumbnailFilePath := filepath.Join(dirs.Tmp, "thumbnails", GenerateFilename("jpeg"))
+	tmpFile, err := os.Create(tmpThumbnailFilePath)
 	if err != nil {
-		if thumbnailFile != nil {
-			os.Remove(thumbnailFile.Name())
-			thumbnailFile.Close()
-		}
+		return err
+	}
 
+	err = jpeg.Encode(tmpFile, imgCropped, &jpeg.Options{Quality: 100})
+	if err != nil {
+		return err
+	}
+
+	err = ConvertImageToWebp(
+		tmpThumbnailFilePath,
+		outputfilePath,
+		75,
+	)
+
+	if err != nil {
 		return err
 	}
 
@@ -96,19 +111,20 @@ func DownloadImage(url string) (img image.Image, format string, err error) {
 type ImageProcessResult struct {
 	Filename          string
 	ThumbnailFilename string
+	UploadedFilename  string
 	PerceptionHash    *goimagehash.ExtImageHash
 }
 
 // ProcessImage saves an image to the disk and creates a thumbnail
 func ProcessImage(img *image.Image, format string, dirs Directories) (result ImageProcessResult, err error) {
-	fileName := fmt.Sprintf("%v.jpeg", time.Now().UnixNano())
+	fileName := fmt.Sprintf("%v.webp", time.Now().UnixNano())
 
 	hash, err := goimagehash.ExtPerceptionHash(*img, 16, 16)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), img, 75)
+	imgFile, err := SaveImage(filepath.Join(dirs.Image, fileName), img, 65)
 	if err != nil {
 		if imgFile != nil {
 			os.Remove(imgFile.Name())
@@ -119,7 +135,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (result Ima
 	}
 	defer imgFile.Close()
 
-	imgCropped, err := CropImage(img, 200, 200)
+	imgCropped, err := CropImage(img, 150, 150)
 	if err != nil {
 		os.Remove(imgFile.Name())
 		imgFile.Close()
@@ -128,7 +144,7 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (result Ima
 	}
 
 	//imgFileName := fmt.Sprintf("%v.%s", , format)
-	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 75)
+	thumbnailFile, err := SaveImage(filepath.Join(dirs.Thumbnail, fileName), &imgCropped, 65)
 	if err != nil {
 		if thumbnailFile != nil {
 			os.Remove(thumbnailFile.Name())
@@ -144,73 +160,190 @@ func ProcessImage(img *image.Image, format string, dirs Directories) (result Ima
 	return ImageProcessResult{Filename: imgFile.Name(), ThumbnailFilename: thumbnailFile.Name(), PerceptionHash: hash}, nil
 }
 
-// ProcessImageFromURL ... TODO
-func ProcessImageFromURL(response *http.Response, format string, dirs Directories) (result ImageProcessResult, err error) {
-	img, _, err := image.Decode(response.Body)
+// ProcessImageNew ...
+func ProcessImageNew(innputFilePath string, dirs Directories) (result *ImageProcessResult, err error) {
+	fileName := filepath.Base(innputFilePath)
+
+	outputFilePath := filepath.Join(dirs.Image, fileName)
+	err = ConvertImageToWebp(innputFilePath, outputFilePath, 75)
 	if err != nil {
-		return ImageProcessResult{}, err
+		return nil, err
 	}
 
-	return ProcessImage(&img, format, dirs)
+	downloadedFile, err := os.Open(innputFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer downloadedFile.Close()
+
+	img, _, err := image.Decode(downloadedFile)
+	if err != nil {
+		return nil, err
+	}
+
+	hash, err := goimagehash.ExtPerceptionHash(img, 16, 16)
+	if err != nil {
+		return nil, err
+	}
+
+	imgCropped, err := CropImage(&img, 150, 150)
+	if err != nil {
+		return nil, err
+	}
+
+	outputThumbnailTmpFilePath := filepath.Join(dirs.Tmp, "thumbnails", fileName)
+	file, err := os.Create(outputThumbnailTmpFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	err = jpeg.Encode(file, imgCropped, &jpeg.Options{Quality: 100})
+	if err != nil {
+		return nil, err
+	}
+
+	outputThumbnailFilePath := filepath.Join(dirs.Thumbnail, fileName)
+	err = ConvertImageToWebp(
+		outputThumbnailTmpFilePath,
+		outputThumbnailFilePath,
+		100,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	result = &ImageProcessResult{
+		Filename:          fileName,
+		ThumbnailFilename: filepath.Base(outputThumbnailFilePath),
+		PerceptionHash:    hash,
+	}
+
+	return result, err
+}
+
+// ProcessImageFromURL ... TODO
+func ProcessImageFromURL(
+	url string,
+	format string,
+	dirs Directories,
+) (result *ImageProcessResult, err error) {
+	fileName := fmt.Sprintf("%v.webp", time.Now().UnixNano())
+
+	tmpFilePath, err := DownloadImageNew(url, fileName, dirs.Tmp)
+	if err != nil {
+		return &ImageProcessResult{}, err
+	}
+
+	return ProcessImageNew(tmpFilePath, dirs)
 
 }
 
 // ProcessImageFromMultipart ... TODO
-func ProcessImageFromMultipart(file *multipart.File, format string, dirs Directories) (result ImageProcessResult, err error) {
-	img, _, err := image.Decode(*file)
+func ProcessImageFromMultipart(
+	file *multipart.File,
+	format string,
+	dirs Directories,
+) (result *ImageProcessResult, err error) {
+	fileName := GenerateFilename("webp")
+	filePath := filepath.Join(dirs.Upload, fileName)
+
+	dst, err := os.Create(filePath)
+	defer dst.Close()
 	if err != nil {
-		return ImageProcessResult{}, err
+		return &ImageProcessResult{}, err
 	}
-	processResult, err := ProcessImage(&img, format, dirs)
+
+	_, err = io.Copy(dst, *file)
+	if err != nil {
+		return &ImageProcessResult{}, err
+	}
+
+	processResult, err := ProcessImageNew(filePath, dirs)
+	processResult.UploadedFilename = filePath
 	return processResult, err
 }
 
+// DownloadImageNew ...
+func DownloadImageNew(
+	URL string,
+	fileName string,
+	directory string,
+) (filePath string, err error) {
+	response, err := http.Get(URL)
+	if err != nil {
+		return "", err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != 200 {
+		return "", err
+	}
+
+	fileName = path.Base(URL)
+
+	filePath = filepath.Join(directory, fileName)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = io.Copy(file, response.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return filePath, nil
+
+}
+
+// ConvertImageToWebp ...
+func ConvertImageToWebp(inputFilePath string, outputFilePath string, quality uint) error {
+	commandArgs := fmt.Sprintf(
+		"%s -q %v -preset picture -m 6 -mt -o -f 100 %s",
+		inputFilePath,
+		quality,
+		outputFilePath)
+
+	fmt.Println(commandArgs)
+	cmd := exec.Command("cwebp", strings.Split(commandArgs, " ")...)
+	err := cmd.Run()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // SaveImage the image to the disk
-func SaveImage(name string, image *image.Image, quality uint) (file *os.File, err error) {
+func SaveImage(filePath string, img *image.Image, quality uint) (file *os.File, err error) {
 	// cwd, err := os.Getwd()
 	// if err != nil {
 	// 	return nil, err
 	// }
-
-	imagick.Initialize()
-	// Schedule cleanup
-	defer imagick.Terminate()
-	mw := imagick.NewMagickWand()
-
-	//fileName := filepath.Base(name)
-	filePath := name
 
 	file, err = os.Create(filePath)
 	if err != nil {
 		return nil, err
 	}
 
-	var buff bytes.Buffer
+	writer := bufio.NewWriter(file)
+	defer func() {
+		writer.Flush()
+		file.Close()
+	}()
 
-	err = jpeg.Encode(&buff, *image, &jpeg.Options{Quality: 100})
+	config, err := webp.ConfigPreset(webp.PresetPhoto, float32(quality/100))
 	if err != nil {
 		return nil, err
 	}
 
-	err = mw.ReadImageBlob(buff.Bytes())
-	if err != nil {
-		return nil, err
-	}
-	mw.SetFormat("jpeg")
-
-	mw.SetCompression(imagick.COMPRESSION_BZIP)
-	mw.BlurImage(5, 0.05)
-
-	err = mw.SetImageCompressionQuality(quality)
-	if err != nil {
-		return nil, err
-	}
-	err = mw.WriteImageFile(file)
+	err = webp.EncodeRGBA(writer, *img, config)
 	if err != nil {
 		return nil, err
 	}
 
-	return
+	return file, nil
 }
 
 // CropImage crops the given Image with a smart cropper that calculates
@@ -238,4 +371,11 @@ func CropImage(imgIn *image.Image, w int, h int) (img image.Image, err error) {
 	}
 
 	return
+}
+
+// GenerateFilename generates a new Unique Filename
+// with a given Format Extension
+func GenerateFilename(fileFormat string) string {
+	fileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), fileFormat)
+	return fileName
 }

@@ -11,9 +11,20 @@ import (
 
 const createPost = `-- name: CreatePost :execresult
 INSERT INTO posts 
-    (url, filename, thumbnail_filename, user_name, content_type, p_hash_0, p_hash_1, p_hash_2, p_hash_3)
+    (
+		url, 
+		filename, 
+		thumbnail_filename, 
+		user_name, 
+		content_type, 
+		p_hash_0, 
+		p_hash_1, 
+		p_hash_2, 
+		p_hash_3, 
+		uploaded_filename
+	)
 VALUES 
-    (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 `
 
 type CreatePostParams struct {
@@ -26,6 +37,7 @@ type CreatePostParams struct {
 	PHash1            uint64 `json:"p_hash_1"`
 	PHash2            uint64 `json:"p_hash_2"`
 	PHash3            uint64 `json:"p_hash_3"`
+	UploadedFilename  string `json:"uploaded_filename"`
 }
 
 func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (sql.Result, error) {
@@ -39,6 +51,7 @@ func (q *Queries) CreatePost(ctx context.Context, arg CreatePostParams) (sql.Res
 		arg.PHash1,
 		arg.PHash2,
 		arg.PHash3,
+		arg.UploadedFilename,
 	)
 }
 
@@ -56,7 +69,7 @@ func (q *Queries) DeletePost(ctx context.Context, id int32) error {
 
 const getAllPosts = `-- name: GetAllPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts
 `
@@ -76,6 +89,7 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -102,7 +116,7 @@ func (q *Queries) GetAllPosts(ctx context.Context) ([]Post, error) {
 
 const getImagePosts = `-- name: GetImagePosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -126,6 +140,7 @@ func (q *Queries) GetImagePosts(ctx context.Context) ([]Post, error) {
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -152,7 +167,7 @@ func (q *Queries) GetImagePosts(ctx context.Context) ([]Post, error) {
 
 const getNewerPosts = `-- name: GetNewerPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -185,6 +200,7 @@ func (q *Queries) GetNewerPosts(ctx context.Context, arg GetNewerPostsParams) ([
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -211,7 +227,7 @@ func (q *Queries) GetNewerPosts(ctx context.Context, arg GetNewerPostsParams) ([
 
 const getOlderPosts = `-- name: GetOlderPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -244,6 +260,7 @@ func (q *Queries) GetOlderPosts(ctx context.Context, arg GetOlderPostsParams) ([
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -270,7 +287,7 @@ func (q *Queries) GetOlderPosts(ctx context.Context, arg GetOlderPostsParams) ([
 
 const getPossibleDuplicatePosts = `-- name: GetPossibleDuplicatePosts :many
 SELECT 
-	posts.id, posts.created_at, posts.updated_at, posts.deleted_at, posts.url, posts.filename, posts.thumbnail_filename, posts.content_type, posts.score, posts.user_level, posts.p_hash_0, posts.p_hash_1, posts.p_hash_2, posts.p_hash_3, posts.user_name, 
+	posts.id, posts.created_at, posts.updated_at, posts.deleted_at, posts.url, posts.uploaded_filename, posts.filename, posts.thumbnail_filename, posts.content_type, posts.score, posts.user_level, posts.p_hash_0, posts.p_hash_1, posts.p_hash_2, posts.p_hash_3, posts.user_name, 
     (
 		bit_count(? ^ p_hash_0) +
         bit_count(? ^ p_hash_1) +
@@ -296,6 +313,7 @@ type GetPossibleDuplicatePostsRow struct {
 	UpdatedAt         time.Time    `json:"updated_at"`
 	DeletedAt         sql.NullTime `json:"deleted_at"`
 	Url               string       `json:"url"`
+	UploadedFilename  string       `json:"uploaded_filename"`
 	Filename          string       `json:"filename"`
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`
@@ -329,6 +347,7 @@ func (q *Queries) GetPossibleDuplicatePosts(ctx context.Context, arg GetPossible
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -356,7 +375,7 @@ func (q *Queries) GetPossibleDuplicatePosts(ctx context.Context, arg GetPossible
 
 const getPost = `-- name: GetPost :one
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -379,6 +398,7 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (Post, error) 
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Url,
+		&i.UploadedFilename,
 		&i.Filename,
 		&i.ThumbnailFilename,
 		&i.ContentType,
@@ -395,7 +415,7 @@ func (q *Queries) GetPost(ctx context.Context, arg GetPostParams) (Post, error) 
 
 const getPosts = `-- name: GetPosts :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -421,6 +441,7 @@ func (q *Queries) GetPosts(ctx context.Context, userLevel int32) ([]Post, error)
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -447,7 +468,7 @@ func (q *Queries) GetPosts(ctx context.Context, userLevel int32) ([]Post, error)
 
 const getPostsByUser = `-- name: GetPostsByUser :many
 SELECT
-	id, created_at, updated_at, deleted_at, url, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
+	id, created_at, updated_at, deleted_at, url, uploaded_filename, filename, thumbnail_filename, content_type, score, user_level, p_hash_0, p_hash_1, p_hash_2, p_hash_3, user_name 
 FROM
 	posts 
 WHERE
@@ -477,6 +498,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
@@ -503,7 +525,7 @@ func (q *Queries) GetPostsByUser(ctx context.Context, arg GetPostsByUserParams) 
 
 const getVotedPost = `-- name: GetVotedPost :one
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name, 
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.uploaded_filename, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name, 
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -527,6 +549,7 @@ type GetVotedPostRow struct {
 	UpdatedAt         time.Time    `json:"updated_at"`
 	DeletedAt         sql.NullTime `json:"deleted_at"`
 	Url               string       `json:"url"`
+	UploadedFilename  string       `json:"uploaded_filename"`
 	Filename          string       `json:"filename"`
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`
@@ -549,6 +572,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 		&i.UpdatedAt,
 		&i.DeletedAt,
 		&i.Url,
+		&i.UploadedFilename,
 		&i.Filename,
 		&i.ThumbnailFilename,
 		&i.ContentType,
@@ -566,7 +590,7 @@ func (q *Queries) GetVotedPost(ctx context.Context, arg GetVotedPostParams) (Get
 
 const getVotedPosts = `-- name: GetVotedPosts :many
 SELECT
-	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name,
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.uploaded_filename, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name,
 	IFNULL(pv.upvoted, 0) as upvoted 
 FROM
 	posts p
@@ -588,6 +612,7 @@ type GetVotedPostsRow struct {
 	UpdatedAt         time.Time    `json:"updated_at"`
 	DeletedAt         sql.NullTime `json:"deleted_at"`
 	Url               string       `json:"url"`
+	UploadedFilename  string       `json:"uploaded_filename"`
 	Filename          string       `json:"filename"`
 	ThumbnailFilename string       `json:"thumbnail_filename"`
 	ContentType       string       `json:"content_type"`
@@ -616,6 +641,7 @@ func (q *Queries) GetVotedPosts(ctx context.Context, arg GetVotedPostsParams) ([
 			&i.UpdatedAt,
 			&i.DeletedAt,
 			&i.Url,
+			&i.UploadedFilename,
 			&i.Filename,
 			&i.ThumbnailFilename,
 			&i.ContentType,
