@@ -49,7 +49,7 @@ func ProcessImageFromURL(
 ) (result *ImageProcessResult, err error) {
 	fileName := fmt.Sprintf("%v.webp", time.Now().UnixNano())
 
-	tmpFilePath, err := DownloadImageNew(url, fileName, dirs.Tmp)
+	tmpFilePath, err := DownloadImage(url, fileName, dirs.Tmp)
 	if err != nil {
 		return &ImageProcessResult{}, fmt.Errorf("Image download failed: %w", err)
 	}
@@ -188,23 +188,6 @@ func CreateThumbnailFromImage(img *image.Image, dstFilePath string, dirs Directo
 // HELPER
 // --------------------------------------
 
-// DownloadImage downloads the image and decodes it
-func DownloadImage(url string) (img image.Image, format string, err error) {
-	response, err := http.Get(url)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	defer response.Body.Close()
-
-	img, format, err = image.Decode(response.Body)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
 // GetCropDimensions returns the Dimensions needed for Cropping
 func GetCropDimensions(img *image.Image, width, height int) (int, int) {
 	// if we don't have width or height set use the smaller image dimension
@@ -224,8 +207,8 @@ func GetCropDimensions(img *image.Image, width, height int) (int, int) {
 	return width, height
 }
 
-// DownloadImageNew ...
-func DownloadImageNew(
+// DownloadImage ...
+func DownloadImage(
 	URL string,
 	fileName string,
 	directory string,

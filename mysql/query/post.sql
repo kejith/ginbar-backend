@@ -124,6 +124,8 @@ SELECT
         
 	) as hamming_distance
     from posts
+	WHERE
+		deleted_at IS NULL
     having hamming_distance < 50
     order by hamming_distance desc;
 

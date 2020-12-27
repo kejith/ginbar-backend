@@ -24,6 +24,10 @@ import (
 // FORMS
 // --------------------
 
+type deletePostForm struct {
+	PostID int32 `form:"id"`
+}
+
 type postVoteForm struct {
 	PostID    int32 `form:"post_id"`
 	VoteState int32 `form:"vote_state"`
@@ -123,37 +127,25 @@ func (server *Server) createPostFromFile(context *gin.Context, url, inputFile st
 	switch fileType {
 	case "image":
 		processResult, err = utils.ProcessImage(inputFile, server.directories)
-
 		if err != nil {
 			panic(err)
 		}
 
-		params := db.GetPossibleDuplicatePostsParams{
-			Column1: processResult.PerceptionHash.GetHash()[0],
-			Column2: processResult.PerceptionHash.GetHash()[1],
-			Column3: processResult.PerceptionHash.GetHash()[2],
-			Column4: processResult.PerceptionHash.GetHash()[3],
+		hash := processResult.PerceptionHash
+
+		duplicatePosts, err = models.GetDuplicatePosts(server.store, context, hash)
+		if err != nil {
+			fmt.Println(fmt.Errorf("Couldnt get duplicate posts: %w", err))
 		}
 
-		duplicatePosts, err = server.store.GetPossibleDuplicatePosts(context, params)
 		if len(duplicatePosts) > 0 {
 			return nil, duplicatePosts
 		}
 
-		if err != nil {
-			fmt.Println(err)
-			return nil, nil
-		}
-
-		if err != nil {
-			context.Error(err)
-			return nil, nil
-		}
-
-		parameters.PHash0 = processResult.PerceptionHash.GetHash()[0]
-		parameters.PHash1 = processResult.PerceptionHash.GetHash()[1]
-		parameters.PHash2 = processResult.PerceptionHash.GetHash()[2]
-		parameters.PHash3 = processResult.PerceptionHash.GetHash()[3]
+		parameters.PHash0 = hash.GetHash()[0]
+		parameters.PHash1 = hash.GetHash()[1]
+		parameters.PHash2 = hash.GetHash()[2]
+		parameters.PHash3 = hash.GetHash()[3]
 
 		parameters.ContentType = "image"
 
@@ -183,8 +175,6 @@ func (server *Server) createPostFromFile(context *gin.Context, url, inputFile st
 		fmt.Println(err)
 		return nil, nil
 	}
-
-	fmt.Println("PostID after insertion: ", postID)
 
 	post, err := server.store.GetPost(context, db.GetPostParams{
 		ID:        int32(postID),
@@ -222,16 +212,10 @@ func (server *Server) CreatePost(context *gin.Context) {
 	}
 
 	// we mutated posts so we need to recache the getPosts response
-	session := sessions.Default(context)
-	userID, ok := session.Get("userid").(int32)
-	if !ok {
-		userID = 0
-	}
-	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/#%v", userID)))
+	server.postsResponseCache.Flush()
 
-	// everything worked fine so we send a Status code 204
-	// TODO implement Status 201
-	if post != nil {
+	// everything worked fine so we send a Status code 200
+	if post != nil { // if we didnt create a Post
 		context.JSON(http.StatusOK, gin.H{
 			"status": "postCreated",
 			"posts":  []db.Post{*post},
@@ -283,7 +267,7 @@ func (server *Server) UploadPost(context *gin.Context) {
 	// we mutated posts so we need to recache the getPosts response
 	server.postsResponseCache.Delete(fmt.Sprintf("/api/post/#%v", userID))
 
-	if post != nil {
+	if post != nil { // if we didnt create a post
 		context.JSON(http.StatusOK, gin.H{
 			"status": "postCreated",
 			"posts":  []db.Post{*post},
@@ -468,4 +452,67 @@ func (server *Server) VotePost(context *gin.Context) {
 	server.postsResponseCache.Delete(cache.CreateKey(fmt.Sprintf("/api/post/%v#%v", form.PostID, userID)))
 	context.Status(http.StatusOK)
 
+}
+
+// DeletePost deleted a post from the storgae
+func (server *Server) DeletePost(context *gin.Context) {
+	// Read Data from Form
+	var form deletePostForm
+	err := context.ShouldBind(&form)
+	if err != nil {
+		context.Status(http.StatusInternalServerError)
+		context.Error(err)
+		return
+	}
+
+	// TODO Check for Priviliges for Deletion
+
+	// read userID from session
+	sessionData, err := ReadSession(sessions.Default(context))
+	if err != nil {
+		panic(fmt.Errorf("Could not read from Session: %w", err))
+	}
+
+	if sessionData.UserLevel >= 10 {
+		err = server.store.DeletePost(context, form.PostID)
+		if err != nil {
+			panic(fmt.Errorf("Could not delete Post: %w", err))
+		}
+		context.Status(http.StatusOK)
+	} else {
+		panic(fmt.Errorf("Not enough Permissions to Delete a Post"))
+	}
+
+}
+
+// SessionData represents all Data written into a Default Session
+type SessionData struct {
+	UserName  string
+	UserID    int32
+	UserLevel int32
+}
+
+// ReadSession reads all data from the session and writes it into a
+// SessionData struct
+func ReadSession(session sessions.Session) (*SessionData, error) {
+	userName, ok := session.Get("user").(string)
+	if !ok {
+		return nil, fmt.Errorf("user name not readable")
+	}
+
+	userID, ok := session.Get("userid").(int32)
+	if !ok {
+		return nil, fmt.Errorf("user ID not readable")
+	}
+
+	userLevel, ok := session.Get("userlevel").(int32)
+	if !ok {
+		return nil, fmt.Errorf("user level not readable")
+	}
+
+	return &SessionData{
+		UserName:  userName,
+		UserID:    userID,
+		UserLevel: userLevel,
+	}, nil
 }

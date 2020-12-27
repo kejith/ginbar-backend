@@ -6,6 +6,7 @@ import (
 
 	"ginbar/mysql/db"
 
+	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
 )
@@ -169,4 +170,16 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 	}
 
 	return &postsJSON, nil
+}
+
+// GetDuplicatePosts retrieves Duplicate Posts from the Storage with a hash
+func GetDuplicatePosts(store db.Store, context *gin.Context, hash *goimagehash.ExtImageHash) ([]db.GetPossibleDuplicatePostsRow, error) {
+	params := db.GetPossibleDuplicatePostsParams{
+		Column1: hash.GetHash()[0],
+		Column2: hash.GetHash()[1],
+		Column3: hash.GetHash()[2],
+		Column4: hash.GetHash()[3],
+	}
+
+	return store.GetPossibleDuplicatePosts(context, params)
 }

@@ -96,6 +96,7 @@ func NewServer(store db.Store) (*Server, error) {
 		groupPost.POST("/create", server.CreatePost)
 		groupPost.POST("/create/multiple", server.CreateMultiplePosts)
 		groupPost.POST("/upload", server.UploadPost)
+		groupPost.POST("/delete", server.DeletePost)
 		groupPost.POST("/vote", server.VotePost)
 	}
 
