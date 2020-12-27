@@ -87,7 +87,7 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 
 		if post.ContentType == "image" && url != "" {
 			//response, _, fileFormat, err := utils.LoadFileFromURL(url)
-			processResult, err := utils.ProcessImageNew(
+			processResult, err := utils.ProcessImage(
 				post.Url,
 				server.directories,
 			)

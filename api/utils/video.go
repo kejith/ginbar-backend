@@ -12,6 +12,25 @@ import (
 	"time"
 )
 
+// ProcessVideo processes a video from the disk. It moves the Input File
+// to the respective directory and creates a thumbnail
+func ProcessVideo(inputFilePath, format string, dirs Directories) (fileName string, thumbnailFilename string, err error) {
+	ext := filepath.Ext(inputFilePath)
+	dstFileName := GenerateFilename(ext)
+	dst := filepath.Join(dirs.Video, dstFileName)
+
+	if err = os.Rename(inputFilePath, dst); err != nil {
+		return "", "", fmt.Errorf("Could not move Video from TMP Dir to Video Dir: %w", err)
+	}
+
+	thumbnailFilename, err = CreateVideoThumbnail(dst, dstFileName, dirs)
+	if err != nil {
+		return "", "", fmt.Errorf("Could not create a Thumbnail for the Video: %w", err)
+	}
+
+	return dstFileName, thumbnailFilename, nil
+}
+
 // ProcessUploadedVideo saves the uploaded video to disk and creates a thumbnail
 func ProcessUploadedVideo(file *multipart.File, format string, dirs Directories) (fileName string, thumbnailFilename string, err error) {
 	name := fmt.Sprintf("%v", time.Now().UnixNano())

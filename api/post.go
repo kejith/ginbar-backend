@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"ginbar/api/utils"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -29,6 +31,10 @@ type postVoteForm struct {
 
 type postForm struct {
 	URL string `form:"URL" binding:"required"`
+}
+
+type uploadForm struct {
+	File *multipart.FileHeader `form:"file"`
 }
 
 // --------------------
@@ -59,7 +65,13 @@ func (server *Server) CreateMultiplePosts(context *gin.Context) {
 	for i, url := range urls {
 		var start = time.Now()
 		fmt.Print(fmt.Sprintf("[%v/%v] %s", i, total, url))
-		post, reposts := server.createPostFromURL(context, url)
+
+		filePath, err := utils.DownloadFile(form.URL, server.directories.Tmp)
+		if err != nil {
+			panic(fmt.Errorf("Could not download the File from the provided URL: %w", err))
+		}
+
+		post, reposts := server.createPostFromFile(context, url, filePath)
 		_ = reposts
 		if post != nil {
 			posts[i] = post
@@ -84,36 +96,33 @@ func (server *Server) CreateMultiplePosts(context *gin.Context) {
 
 }
 
-func (server *Server) createPostFromURL(context *gin.Context, url string) (*db.Post, []db.GetPossibleDuplicatePostsRow) {
+func (server *Server) createPostFromFile(context *gin.Context, url, inputFile string) (*db.Post, []db.GetPossibleDuplicatePostsRow) {
 	var err error
 
-	response, fileType, fileFormat, err := utils.LoadFileFromURL(url)
-	if err != nil {
-		fmt.Println(err)
-		return nil, nil
-	}
-	defer response.Body.Close()
-
-	// read data from session
+	// ---------------
+	// USER DATA
 	session := sessions.Default(context)
 	userName, ok := session.Get("user").(string)
+	if !ok {
+		fmt.Println(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
+		return nil, nil
+	}
 	userLevel, ok := session.Get("userlevel").(int32)
 	if !ok {
 		userLevel = 0
 	}
 
-	if !ok {
-		fmt.Println(errors.New(" PostHandler.Create => Type Assertion failed on session['user']"))
-		return nil, nil
-	}
-
 	parameters := db.CreatePostParams{Url: url, UserName: userName}
-	processResult := &utils.ImageProcessResult{}
+
+	mimeType := mime.TypeByExtension(filepath.Ext(inputFile))
+	mimeComponents := strings.Split(mimeType, "/")
+	fileType := mimeComponents[0]
 
 	var duplicatePosts []db.GetPossibleDuplicatePostsRow
+	processResult := &utils.ImageProcessResult{}
 	switch fileType {
 	case "image":
-		processResult, err = utils.ProcessImageFromURL(url, "", server.directories)
+		processResult, err = utils.ProcessImage(inputFile, server.directories)
 
 		if err != nil {
 			panic(err)
@@ -150,14 +159,13 @@ func (server *Server) createPostFromURL(context *gin.Context, url string) (*db.P
 
 		break
 	case "video":
-		processResult.Filename, processResult.ThumbnailFilename, err = utils.ProcessVideoFromURL(response, fileFormat, server.directories)
+		processResult.Filename, processResult.ThumbnailFilename, err = utils.ProcessVideo(inputFile, fileType, server.directories)
 
 		if err != nil {
-			context.Error(err)
-			return nil, nil
+			panic(err)
 		}
 
-		parameters.ContentType = fmt.Sprintf("%s/%s", fileType, fileFormat)
+		parameters.ContentType = mimeType
 		break
 	}
 
@@ -199,7 +207,12 @@ func (server *Server) CreatePost(context *gin.Context) {
 		return
 	}
 
-	post, reposts := server.createPostFromURL(context, form.URL)
+	filePath, err := utils.DownloadFile(form.URL, server.directories.Tmp)
+	if err != nil {
+		panic(fmt.Errorf("Could not download the File from the provided URL: %w", err))
+	}
+
+	post, reposts := server.createPostFromFile(context, form.URL, filePath)
 	if len(reposts) > 0 {
 		context.JSON(http.StatusOK, gin.H{
 			"status": "possibleDuplicatesFound",
@@ -235,79 +248,32 @@ func (server *Server) CreatePost(context *gin.Context) {
 // UploadPost handles uploads from files and creates a post with them
 func (server *Server) UploadPost(context *gin.Context) {
 	session := sessions.Default(context)
-	userName, ok := session.Get("user").(string)
-	userLevel, ok := session.Get("userlevel").(int32)
-	if !ok {
-		userLevel = 0
-	}
 
-	if !ok {
-
-		panic(
-			errors.New(
-				" PostHandler.Create => Type Assertion failed on session['user']"))
-	}
-
-	// Limit File Size => 25 << 20 is 25MB
-	context.Request.ParseMultipartForm(25 << 20)
-	file, handler, err := context.Request.FormFile("file")
+	err := context.Request.ParseMultipartForm(25 << 20)
 	if err != nil {
-		fmt.Println("Error Retrieving the File")
-		fmt.Println(err)
+		panic(fmt.Errorf("Failed to parse Multipart Form: %w", err))
+	}
+
+	var form uploadForm
+	if err := context.ShouldBind(&form); err != nil {
+		panic(fmt.Errorf("Could not Bind form with Request: %w", err))
+	}
+
+	file := form.File
+	fp := filepath.Base(file.Filename)
+	tmpFilePath := filepath.Join(server.directories.Tmp, fp)
+	if err := context.SaveUploadedFile(file, tmpFilePath); err != nil {
+		panic(fmt.Errorf("Could not save uploaded File: %w", err))
+	}
+
+	post, reposts := server.createPostFromFile(context, "", tmpFilePath)
+	if len(reposts) > 0 {
+		context.JSON(http.StatusOK, gin.H{
+			"status": "possibleDuplicatesFound",
+			"posts":  reposts,
+		})
 		return
 	}
-	defer file.Close()
-
-	mimeType := handler.Header.Get("Content-Type")
-	mimeComponents := strings.Split(mimeType, "/")
-	fileType, fileFormat := mimeComponents[0], mimeComponents[1]
-
-	parameters := db.CreatePostParams{
-		UserName: userName,
-	}
-
-	switch fileType {
-	case "video":
-		parameters.Filename, parameters.ThumbnailFilename, err = utils.ProcessUploadedVideo(&file, fileFormat, server.directories)
-		parameters.ContentType = mimeType
-		// everything worked fine so we send a Status code 204
-		// TODO implement Status 201
-		context.Status(http.StatusNoContent)
-		break
-	case "image":
-		processResult, err := utils.ProcessImageFromMultipart(&file, fileFormat, server.directories)
-
-		if err != nil {
-			panic(err)
-		}
-
-		parameters.Filename = filepath.Base(processResult.Filename)
-		parameters.ThumbnailFilename = filepath.Base(processResult.ThumbnailFilename)
-		parameters.ContentType = "image"
-
-		parameters.PHash0 = processResult.PerceptionHash.GetHash()[0]
-		parameters.PHash1 = processResult.PerceptionHash.GetHash()[1]
-		parameters.PHash2 = processResult.PerceptionHash.GetHash()[2]
-		parameters.PHash3 = processResult.PerceptionHash.GetHash()[3]
-		parameters.UploadedFilename = processResult.UploadedFilename
-
-		break
-	}
-
-	res, err := server.store.CreatePost(context, parameters)
-	if err != nil {
-		panic(err)
-	}
-
-	postID, err := res.LastInsertId()
-	if err != nil {
-		panic(err)
-	}
-
-	post, err := server.store.GetPost(context, db.GetPostParams{
-		ID:        int32(postID),
-		UserLevel: userLevel,
-	})
 
 	userID, ok := session.Get("userid").(int32)
 	if !ok {
@@ -316,7 +282,18 @@ func (server *Server) UploadPost(context *gin.Context) {
 
 	// we mutated posts so we need to recache the getPosts response
 	server.postsResponseCache.Delete(fmt.Sprintf("/api/post/#%v", userID))
-	context.JSON(http.StatusOK, post)
+
+	if post != nil {
+		context.JSON(http.StatusOK, gin.H{
+			"status": "postCreated",
+			"posts":  []db.Post{*post},
+		})
+	} else {
+		context.JSON(http.StatusOK, gin.H{
+			"status": "postCreated",
+			"posts":  []db.Post{},
+		})
+	}
 }
 
 // GetAll retrives all users from the database and returns these users as
