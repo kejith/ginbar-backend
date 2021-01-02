@@ -106,6 +106,7 @@ func SaveVideoFromURL(response *http.Response, name string, format string, direc
 // CreateVideoThumbnail creates a Thumbnail from a Video File
 func CreateVideoThumbnail(inputFilePath string, name string, dirs Directories) (filename string, err error) {
 	filename = fmt.Sprintf("%s.jpeg", name)
+	webpFilename := fmt.Sprintf("%s.webp", name)
 	tmpThumbnailFilePath := filepath.Join(dirs.Tmp, filename)
 	commandArgs := fmt.Sprintf("-i %s -ss 00:00:01.000 -vframes 1 %s -hide_banner -loglevel panic", inputFilePath, tmpThumbnailFilePath)
 	cmd := exec.Command("ffmpeg", strings.Split(commandArgs, " ")...)
@@ -115,7 +116,7 @@ func CreateVideoThumbnail(inputFilePath string, name string, dirs Directories) (
 		return "", err
 	}
 
-	err = CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(dirs.Thumbnail, filename), dirs)
+	err = CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(dirs.Thumbnail, webpFilename), dirs)
 
 	if err != nil {
 		return "", err

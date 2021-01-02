@@ -243,7 +243,7 @@ func DownloadImage(
 // ConvertImageToWebp ...
 func ConvertImageToWebp(inputFilePath string, outputFilePath string, quality uint) error {
 	commandArgs := fmt.Sprintf(
-		"%s -q %v -preset picture -m 6 -mt -o %s",
+		"\"%s\" -q %v -preset picture -m 6 -mt -o \"%s\"",
 		inputFilePath,
 		quality,
 		outputFilePath)
