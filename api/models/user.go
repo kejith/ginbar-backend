@@ -1,8 +1,9 @@
 package models
 
 import (
-	"ginbar/mysql/db"
 	"time"
+
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
 )
 
 // PublicUserJSON is a representation in JSON for the Database Object User

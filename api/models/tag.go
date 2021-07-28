@@ -1,6 +1,6 @@
 package models
 
-import "ginbar/mysql/db"
+import "github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
 
 // PostTagJSON is a representation in JSON for the Database Object PostTag
 type PostTagJSON struct {

@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"ginbar/api/utils"
-	"ginbar/mysql/db"
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
 
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"

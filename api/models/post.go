@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"ginbar/mysql/db"
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
 
 	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/contrib/sessions"

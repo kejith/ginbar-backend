@@ -9,8 +9,8 @@ import (
 	"os"
 	"strconv"
 
-	"ginbar/api"
-	"ginbar/mysql/db"
+	"github.com/kejith/ginbar-backend/api"
+	"github.com/kejith/ginbar-backend/mysql/db"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"

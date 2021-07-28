@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"ginbar/api/utils"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -12,8 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"ginbar/api/models"
-	"ginbar/mysql/db"
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
+
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/models"
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
 
 	"github.com/gin-contrib/cache"
 	"github.com/gin-gonic/contrib/sessions"

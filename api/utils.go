@@ -2,8 +2,6 @@ package api
 
 import (
 	"fmt"
-	"ginbar/api/utils"
-	"ginbar/mysql/db"
 	"image/jpeg"
 	"io/ioutil"
 	"log"
@@ -11,6 +9,9 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
+	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
 
 	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/gin"
