@@ -9,6 +9,7 @@ import (
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
+	"github.com/gin-contrib/cache"
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/contrib/sessions"
@@ -89,7 +90,7 @@ func NewServer(store db.Store) (*Server, error) {
 		// TODO fix cache by user
 		// groupPost.GET("/", _cache.PageByUser(server.postsResponseCache, time.Minute, server.GetAll))
 		// groupPost.GET("/:post_id", _cache.PageByUser(server.postsResponseCache, time.Minute*30, server.Get))
-		groupPost.GET("/", server.GetAll)
+		groupPost.GET("/", cache.CachePage(server.postsResponseCache, time.Minute, server.GetAll))
 		groupPost.GET("/:post_id", server.Get)
 		// groupPost.GET("/", server.GetAll)
 		// groupPost.GET("/:post_id", server.Get)
