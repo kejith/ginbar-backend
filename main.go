@@ -77,14 +77,21 @@ func main() {
 	* Server handles Incoming HTTP Requests, Store the State of the Server
 	* and Connections
 	 */
-	server, err := api.NewServer(store)
+
+	server, err := api.NewFiber(store)
 	if err != nil {
 		log.Fatal("Can't create server", err)
 	}
+	_ = server
 
 	// Start Server
-	err = server.Start(":8080")
-	if err != nil {
-		log.Fatal("Can't start server", err)
-	}
+	// server, err := api.NewServer(store)
+	// if err != nil {
+	// 	log.Fatal("Can't create server", err)
+	// }
+	// _ = server
+	// err = server.Start(":8080")
+	// if err != nil {
+	// 	log.Fatal("Can't start server", err)
+	// }
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
 )
 
 // PostJSON is a struct to map Data from the Database to a reduced JSON object
@@ -157,6 +158,72 @@ func GetPosts(store db.Store, context *gin.Context) (*[]PostJSON, error) {
 
 	if highestID == 0 && lowestID == 0 {
 		posts, err = store.GetPosts(context, userLevel)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	var postsJSON []PostJSON
+	for _, post := range posts {
+		var p PostJSON = PostJSON{}
+		p.PopulatePost(post)
+		postsJSON = append(postsJSON, p)
+	}
+
+	return &postsJSON, nil
+}
+
+type PostsQueries struct {
+	MinimumID   string `query:"lowestID"`
+	MaximumID   string `query:"highestID"`
+	PostsPerRow string `query:"postsPerRow"`
+}
+
+// GetPosts returns Posts with voting information
+func GetPostsFibre(store db.Store, c *fiber.Ctx) (*[]PostJSON, error) {
+	queries := &PostsQueries{}
+
+	if err := c.QueryParser(queries); err != nil {
+		return nil, err
+	}
+
+	lowestID, _ := strconv.ParseInt(queries.MinimumID, 10, 32)
+	highestID, _ := strconv.ParseInt(queries.MaximumID, 10, 32)
+	postsPerRow, _ := strconv.ParseInt(queries.PostsPerRow, 10, 32)
+
+	_ = postsPerRow
+	// session := sessions.Default(c)
+	// userLevel, ok := session.Get("userlevel").(int32)
+	// if !ok {
+	// 	userLevel = 0
+	// }
+
+	var userLevel int32 = 0
+
+	var posts []db.Post
+	var err error
+	// if lowestID != 0 {
+	// 	params := db.GetOlderPostsParams{
+	// 		ID:        int32(lowestID),
+	// 		UserLevel: userLevel,
+	// 		Limit:     int32(postsPerRow)*10 + 1,
+	// 	}
+
+	// 	posts, err = store.GetOlderPosts(c, params)
+	// }
+
+	// if highestID != 0 {
+	// 	params := db.GetNewerPostsParams{
+	// 		ID:        highestID,
+	// 		UserLevel: userLevel,
+	// 		Limit:     postsPerRow*10 + 1,
+	// 	}
+
+	// 	posts, err = store.GetNewerPosts(c, params)
+	// }
+
+	if highestID == 0 && lowestID == 0 {
+		posts, err = store.GetPosts(c.Context(), userLevel)
 	}
 	if err != nil {
 		return nil, err

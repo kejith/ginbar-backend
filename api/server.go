@@ -1,11 +1,15 @@
 package api
 
 import (
+	"crypto/tls"
+	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
+	"ginbar/api/models"
 	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
@@ -15,24 +19,55 @@ import (
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
+	"github.com/gofiber/fiber/v2"
+	fcache "github.com/gofiber/fiber/v2/middleware/cache"
+	flogger "github.com/gofiber/fiber/v2/middleware/logger"
 )
 
-// Server serves HTTP requests and Stores Connections, Sessions and State
-type Server struct {
+var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
+
+type BaseServer struct {
 	store              db.Store
-	router             *gin.Engine
 	sessions           sessions.CookieStore
 	directories        utils.Directories
 	postsResponseCache *persistence.InMemoryStore
 }
 
-// NewServer creates a new HTTP server and sets up routing.
-func NewServer(store db.Store) (*Server, error) {
-	var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
-	// setup directory paths
+// Server serves HTTP requests and Stores Connections, Sessions and State
+type Server struct {
+	BaseServer
+	router *gin.Engine
+}
+
+// Server serves HTTP requests and Stores Connections, Sessions and State
+type FiberServer struct {
+	BaseServer
+	App *fiber.App
+}
+
+type PostsJson struct {
+	Posts *[]models.PostJSON `json:"posts"`
+}
+
+func (server *FiberServer) GetAllFibre(c *fiber.Ctx) error {
+	var posts *[]models.PostJSON
+	var err error
+
+	posts, err = models.GetPostsFibre(server.store, c)
+
+	if err != nil {
+		fmt.Println(err)
+		c.Status(http.StatusInternalServerError)
+		return nil
+	}
+
+	return c.JSON(PostsJson{Posts: posts})
+}
+
+func SetupDirectories() utils.Directories {
 	cwd, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	directories := utils.Directories{
@@ -44,12 +79,66 @@ func NewServer(store db.Store) (*Server, error) {
 		Upload:    filepath.Join(cwd, "public", "upload"),
 	}
 
+	return directories
+}
+
+func NewFiber(store db.Store) (*FiberServer, error) {
+	directories := SetupDirectories()
+	server := &FiberServer{
+		BaseServer: BaseServer{
+			store:       store,
+			sessions:    sessions.NewCookieStore([]byte(secret)),
+			directories: directories,
+		},
+		App: fiber.New(),
+	}
+
+	// Register Middlewars
+	server.App.Use(fcache.New())
+	// server.App.Use(compress.New(compress.Config{
+	// 	Level: compress.LevelBestCompression, // 2
+	// }))
+	server.App.Use(flogger.New())
+
+	// Register Dynamic Routes
+	server.App.Get("/api/post/*", server.GetAllFibre)
+
+	// Register Static Routes
+	server.App.Static("/", "./public")
+	server.App.Static("*", "./public/index.html")
+
+	// Create TLS Certificate
+	cer, err := tls.LoadX509KeyPair("fullchain.pem", "privkey.pem")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cer}}
+
+	// Create SSL Listener
+	ln, err := tls.Listen("tcp", ":443", tlsConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Fatal(server.App.Listener(ln))
+
+	return server, nil
+}
+
+// NewServer creates a new HTTP server and sets up routing.
+func NewServer(store db.Store) (*Server, error) {
+
+	directories := SetupDirectories()
+
 	// create Server
 	server := &Server{
-		store:       store,
-		router:      gin.New(),
-		sessions:    sessions.NewCookieStore([]byte(secret)),
-		directories: directories,
+		BaseServer: BaseServer{
+			store:       store,
+			sessions:    sessions.NewCookieStore([]byte(secret)),
+			directories: directories,
+		},
+		router: gin.New(),
 	}
 
 	//
