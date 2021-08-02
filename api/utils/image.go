@@ -2,6 +2,7 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"image"
 	"io"
@@ -80,25 +81,25 @@ func ProcessImageFromMultipart(
 func ProcessImage(inputFilePath string, dirs Directories) (result *ImageProcessResult, err error) {
 	fileName := filepath.Base(inputFilePath)
 
-	outputFilePath := filepath.Join(dirs.Image, fileName)
+	outputFilePath := filepath.Join(dirs.Image, (filepath.Base(fileName) + ".webp"))
 	err = ConvertImageToWebp(inputFilePath, outputFilePath, 75)
 	if err != nil {
-		return nil, fmt.Errorf("Convert Image to WEBP failed: %w", err)
+		return nil, fmt.Errorf("convert Image to WEBP failed: %w", err)
 	}
 
 	img, err := LoadImageFile(inputFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("Loading Image(%s) from disk failed: %w", inputFilePath, err)
+		return nil, fmt.Errorf("loading Image(%s) from disk failed: %w", inputFilePath, err)
 	}
 
 	hash, err := goimagehash.ExtPerceptionHash(*img, 16, 16)
 	if err != nil {
-		return nil, fmt.Errorf("Perception Hash generation failed: %w", err)
+		return nil, fmt.Errorf("perception Hash generation failed: %w", err)
 	}
 
 	outputThumbnailFilePath := filepath.Join(dirs.Thumbnail, fileName)
 	if err = CreateThumbnailFromImage(img, outputThumbnailFilePath, dirs); err != nil {
-		return nil, fmt.Errorf("Thumbnail creation from Image failed: %w", err)
+		return nil, fmt.Errorf("thumbnail creation from Image failed: %w", err)
 	}
 
 	result = &ImageProcessResult{
@@ -114,13 +115,13 @@ func ProcessImage(inputFilePath string, dirs Directories) (result *ImageProcessR
 func LoadImageFile(inputFilePath string) (*image.Image, error) {
 	file, err := os.Open(inputFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("Image File couldn't be opened: %w", err)
+		return nil, fmt.Errorf("image File couldn't be opened: %w", err)
 	}
 	defer file.Close()
 
 	img, _, err := image.Decode(file)
 	if err != nil {
-		return nil, fmt.Errorf("Image decoding failed: %w", err)
+		return nil, fmt.Errorf("image decoding failed: %w", err)
 	}
 
 	return &img, err
@@ -240,22 +241,36 @@ func DownloadImage(
 
 }
 
+func fileNameWithoutExtension(fileName string) string {
+    if pos := strings.LastIndexByte(fileName, '.'); pos != -1 {
+        return fileName[:pos]
+    }
+    return fileName    
+}
+
 // ConvertImageToWebp ...
 func ConvertImageToWebp(inputFilePath string, outputFilePath string, quality uint) error {
 	commandArgs := fmt.Sprintf(
-		"\"%s\" -q %v -preset picture -m 6 -mt -o \"%s\"",
+		"%s -q %v -preset picture -m 6 -mt -o %s",
 		inputFilePath,
 		quality,
 		outputFilePath)
 
-	fmt.Println(commandArgs)
+	//fmt.Println(commandArgs)
 	cmd := exec.Command("cwebp", strings.Split(commandArgs, " ")...)
-	err := cmd.Run()
 
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	
+	err := cmd.Run()
 	if err != nil {
+		//fmt.Println("out:", outb.String(), "err:", errb.String())
 		return err
 	}
-
+	
+	
+	
 	return nil
 }
 
@@ -319,7 +334,7 @@ func CropImage(imgIn *image.Image, w int, h int) (i *image.Image, err error) {
 // GenerateFilename generates a new Unique Filename
 // with a given Format Extension
 func GenerateFilename(fileFormat string) string {
-	fileName := fmt.Sprintf("%v.%s", time.Now().UnixNano(), fileFormat)
+	fileName := fmt.Sprintf("%v%s", time.Now().UnixNano(), fileFormat)
 	return fileName
 }
 

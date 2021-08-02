@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
+	"ginbar/mysql/db"
 
 	"github.com/gin-gonic/gin"
 )

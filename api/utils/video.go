@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -19,13 +20,16 @@ func ProcessVideo(inputFilePath, format string, dirs Directories) (fileName stri
 	dstFileName := GenerateFilename(ext)
 	dst := filepath.Join(dirs.Video, dstFileName)
 
+	// move Video from tmp to public
 	if err = os.Rename(inputFilePath, dst); err != nil {
-		return "", "", fmt.Errorf("Could not move Video from TMP Dir to Video Dir: %w", err)
+		return "", "", fmt.Errorf("could not move Video from TMP Dir to Video Dir: %w", err)
 	}
 
-	thumbnailFilename, err = CreateVideoThumbnail(dst, dstFileName, dirs)
+	thumbnailFilename = dstFileName[0:len(dstFileName)-len(ext)]
+	// create Thumbnail
+	thumbnailFilename, err = CreateVideoThumbnail(dst, thumbnailFilename, dirs)
 	if err != nil {
-		return "", "", fmt.Errorf("Could not create a Thumbnail for the Video: %w", err)
+		return "", "", fmt.Errorf("could not create a Thumbnail for the Video: %w", err)
 	}
 
 	return dstFileName, thumbnailFilename, nil
@@ -105,21 +109,27 @@ func SaveVideoFromURL(response *http.Response, name string, format string, direc
 
 // CreateVideoThumbnail creates a Thumbnail from a Video File
 func CreateVideoThumbnail(inputFilePath string, name string, dirs Directories) (filename string, err error) {
-	filename = fmt.Sprintf("%s.jpeg", name)
+	filename = fmt.Sprintf("%s.jpg", name)
 	webpFilename := fmt.Sprintf("%s.webp", name)
 	tmpThumbnailFilePath := filepath.Join(dirs.Tmp, filename)
 	commandArgs := fmt.Sprintf("-i %s -ss 00:00:01.000 -vframes 1 %s -hide_banner -loglevel panic", inputFilePath, tmpThumbnailFilePath)
 	cmd := exec.Command("ffmpeg", strings.Split(commandArgs, " ")...)
+	
+	var outb, errb bytes.Buffer
+	cmd.Stdout = &outb
+	cmd.Stderr = &errb
+	
 	err = cmd.Run()
+
 
 	if err != nil {
 		return "", err
 	}
-
+	
 	err = CreateThumbnailFromFile(tmpThumbnailFilePath, filepath.Join(dirs.Thumbnail, webpFilename), dirs)
 
 	if err != nil {
 		return "", err
 	}
-	return filename, nil
+	return webpFilename, nil
 }

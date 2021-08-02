@@ -5,13 +5,14 @@ import (
 	"image/jpeg"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
+	"ginbar/api/utils"
+	"ginbar/mysql/db"
 
 	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,7 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 		return
 	}
 	imageDir := server.directories.Image
-	//thumbDir := server.directories.Thumbnail
+	thumbDir := server.directories.Thumbnail
 	videoDir := server.directories.Video
 
 	imageFiles, err := ioutil.ReadDir(imageDir)
@@ -45,15 +46,15 @@ func (server *Server) RegenerateThumbnails(context *gin.Context) {
 		i = i + 1
 
 		if post.ContentType == "image" {
-			// err = utils.CreateThumbnailFromFile(
-			// 	filepath.Join(imageDir, fileName),
-			// 	filepath.Join(thumbDir, fileName),
-			// 	server.directories,
-			// )
+			err = utils.CreateThumbnailFromFile(
+				filepath.Join(imageDir, fileName),
+				filepath.Join(thumbDir, fileName),
+				server.directories,
+			)
 
-			// if err != nil {
-			// 	fmt.Println(err)
-			// }
+			if err != nil {
+				fmt.Println(err)
+			}
 		} else {
 			fmt.Println(i, length, filepath.Join(imageDir, fileName))
 			videoFilePath := filepath.Join(videoDir, fileName)
@@ -88,13 +89,14 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 
 		if post.ContentType == "image" && url != "" {
 			//response, _, fileFormat, err := utils.LoadFileFromURL(url)
-			processResult, err := utils.ProcessImage(
+			processResult, err := utils.ProcessImageFromURL(
 				post.Url,
+				filepath.Ext(post.Url),
 				server.directories,
 			)
 
 			if err != nil {
-				fmt.Println(err)
+				//fmt.Println(err)
 				continue
 			}
 
@@ -111,6 +113,30 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 		}
 	}
 
+}
+
+func (server *Server) CheckIfExternalMediaIsAvailable(context *gin.Context) {
+	posts, err := server.store.GetImagePosts(context)
+	if err != nil {
+		log.Print(err)
+		return
+	}
+
+	fmt.Println("---- Start Checking for URLs that don't exist anymore ----")
+	for _, post := range posts {
+		response, err := http.Get(post.Url)
+		if err != nil {
+			fmt.Println("url bad")
+		}
+
+		if response.StatusCode == 404 {
+			// TODO implement deletion real deletion of the post
+			// or a backup strat
+			// for now we just print the id to manually delete it from the database
+			fmt.Printf("%v ,", post.ID)
+		}
+	}
+	fmt.Println("--- Finished  Checking for URLs ----")
 }
 
 // RecalculateHashes iterates over every existing Image Post and calculates

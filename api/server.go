@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
+	"ginbar/api/utils"
+	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache/persistence"
 	"github.com/gin-contrib/cors"
@@ -75,6 +75,7 @@ func NewServer(store db.Store) (*Server, error) {
 		groupUtils.GET("/regenerate/thumbnails", server.RegenerateThumbnails)
 		groupUtils.GET("/regenerate/hashes", server.RecalculateHashes)
 		groupUtils.GET("/reprocess/urls", server.RedownloadAndCompressImages)
+		groupUtils.GET("/check/urls", server.CheckIfExternalMediaIsAvailable)
 	}
 
 	// API

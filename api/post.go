@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
+	"ginbar/api/utils"
 
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/models"
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
+	"ginbar/api/models"
+	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache"
 	"github.com/gin-gonic/contrib/sessions"

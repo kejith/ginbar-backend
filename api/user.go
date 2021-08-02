@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/models"
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/api/utils"
-	"github.com/kejith/ginbar-backend/com/kejith/ginbar-backend/mysql/db"
+	"ginbar/api/models"
+	"ginbar/api/utils"
+	"ginbar/mysql/db"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"
