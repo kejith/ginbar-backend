@@ -5,3 +5,4 @@ privkey.pem
 .vscode/dlv-sudo.sh
 .vscode/launch.json
 .vscode/settings.json
+.env
