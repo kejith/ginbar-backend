@@ -94,7 +94,7 @@ func (server *Server) GetUserByName(context *gin.Context) {
 		return
 	}
 
-	user, err := server.store.GetUser(context, int32(userID))
+	user, _ := server.store.GetUser(context, int32(userID))
 	context.JSON(http.StatusOK, gin.H{
 		"status": http.StatusOK,
 		"data":   user,
@@ -128,7 +128,7 @@ func (server *Server) CreateUser(context *gin.Context) {
 
 	if len(createParams.Name) < 4 || !utils.IsEmailValid(createParams.Email) {
 		context.Status(http.StatusUnprocessableEntity)
-		context.Error(errors.New("Username or Email not valid"))
+		context.Error(errors.New("username or Email not valid"))
 		return
 	}
 

@@ -11,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"ginbar/api/utils"
-
 	"ginbar/api/models"
+	"ginbar/api/utils"
 	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache"
@@ -62,18 +61,18 @@ func (server *Server) CreateMultiplePosts(context *gin.Context) {
 	urls := strings.Split(form.URL, ",")
 
 	if len(urls) < 1 {
-		panic(errors.New("No URL transmitted"))
+		panic(errors.New("no URL transmitted"))
 	}
 
 	var posts = make([](*db.Post), len(urls))
 	var total = len(urls)
 	for i, url := range urls {
 		var start = time.Now()
-		fmt.Print(fmt.Sprintf("[%v/%v] %s", i, total, url))
+		fmt.Printf("[%v/%v] %s", i, total, url)
 
 		filePath, err := utils.DownloadFile(form.URL, server.directories.Tmp)
 		if err != nil {
-			panic(fmt.Errorf("Could not download the File from the provided URL: %w", err))
+			panic(fmt.Errorf("could not download the File from the provided URL: %w", err))
 		}
 
 		post, reposts := server.createPostFromFile(context, url, filePath)
@@ -81,7 +80,7 @@ func (server *Server) CreateMultiplePosts(context *gin.Context) {
 		if post != nil {
 			posts[i] = post
 		}
-		fmt.Print(fmt.Sprintf(" %v\n", time.Since(start)))
+		fmt.Printf(" %v\n", time.Since(start))
 	}
 
 	// we mutated posts so we need to recache the getPosts response
@@ -136,7 +135,7 @@ func (server *Server) createPostFromFile(context *gin.Context, url, inputFile st
 
 		duplicatePosts, err = models.GetDuplicatePosts(server.store, context, hash)
 		if err != nil {
-			fmt.Println(fmt.Errorf("Couldnt get duplicate posts: %w", err))
+			fmt.Println(fmt.Errorf("couldnt get duplicate posts: %w", err))
 		}
 
 		if len(duplicatePosts) > 0 {
@@ -150,7 +149,6 @@ func (server *Server) createPostFromFile(context *gin.Context, url, inputFile st
 
 		parameters.ContentType = "image"
 
-		break
 	case "video":
 		processResult.Filename, processResult.ThumbnailFilename, err = utils.ProcessVideo(inputFile, fileType, server.directories)
 
@@ -159,7 +157,6 @@ func (server *Server) createPostFromFile(context *gin.Context, url, inputFile st
 		}
 
 		parameters.ContentType = mimeType
-		break
 	}
 
 	parameters.Filename = filepath.Base(processResult.Filename)
@@ -177,7 +174,7 @@ func (server *Server) createPostFromFile(context *gin.Context, url, inputFile st
 		return nil, nil
 	}
 
-	post, err := server.store.GetPost(context, db.GetPostParams{
+	post, _ := server.store.GetPost(context, db.GetPostParams{
 		ID:        int32(postID),
 		UserLevel: userLevel,
 	})
@@ -200,7 +197,7 @@ func (server *Server) CreatePost(context *gin.Context) {
 
 	filePath, err := utils.DownloadFile(form.URL, server.directories.Tmp)
 	if err != nil {
-		panic(fmt.Errorf("Could not download the File from the provided URL: %w", err))
+		panic(fmt.Errorf("could not download the File from the provided URL: %w", err))
 	}
 
 	post, reposts := server.createPostFromFile(context, form.URL, filePath)
@@ -236,19 +233,19 @@ func (server *Server) UploadPost(context *gin.Context) {
 
 	err := context.Request.ParseMultipartForm(25 << 20)
 	if err != nil {
-		panic(fmt.Errorf("Failed to parse Multipart Form: %w", err))
+		panic(fmt.Errorf("failed to parse Multipart Form: %w", err))
 	}
 
 	var form uploadForm
 	if err := context.ShouldBind(&form); err != nil {
-		panic(fmt.Errorf("Could not Bind form with Request: %w", err))
+		panic(fmt.Errorf("could not Bind form with Request: %w", err))
 	}
 
 	file := form.File
 	fp := filepath.Base(file.Filename)
 	tmpFilePath := filepath.Join(server.directories.Tmp, fp)
 	if err := context.SaveUploadedFile(file, tmpFilePath); err != nil {
-		panic(fmt.Errorf("Could not save uploaded File: %w", err))
+		panic(fmt.Errorf("could not save uploaded File: %w", err))
 	}
 
 	post, reposts := server.createPostFromFile(context, "", tmpFilePath)
@@ -341,7 +338,7 @@ func (server *Server) Get(context *gin.Context) {
 			PostID: post.ID,
 		}
 
-		tags, err := server.store.GetTagsByPost(context, tagsParams)
+		tags, _ := server.store.GetTagsByPost(context, tagsParams)
 
 		var tagsJSON []models.PostTagJSON
 		for _, tag := range tags {
@@ -389,7 +386,7 @@ func (server *Server) Get(context *gin.Context) {
 			PostID: post.ID,
 		}
 
-		tags, err := server.store.GetTagsByPost(context, tagsParams)
+		tags, _ := server.store.GetTagsByPost(context, tagsParams)
 
 		var tagsJSON []models.PostTagJSON
 		for _, tag := range tags {
@@ -471,17 +468,17 @@ func (server *Server) DeletePost(context *gin.Context) {
 	// read userID from session
 	sessionData, err := ReadSession(sessions.Default(context))
 	if err != nil {
-		panic(fmt.Errorf("Could not read from Session: %w", err))
+		panic(fmt.Errorf("could not read from Session: %w", err))
 	}
 
 	if sessionData.UserLevel >= 10 {
 		err = server.store.DeletePost(context, form.PostID)
 		if err != nil {
-			panic(fmt.Errorf("Could not delete Post: %w", err))
+			panic(fmt.Errorf("could not delete Post: %w", err))
 		}
 		context.Status(http.StatusOK)
 	} else {
-		panic(fmt.Errorf("Not enough Permissions to Delete a Post"))
+		panic(fmt.Errorf("not enough Permissions to Delete a Post"))
 	}
 
 }

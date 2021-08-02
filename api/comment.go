@@ -37,7 +37,7 @@ func (server *Server) GetComments(context *gin.Context) {
 
 	postID, err := strconv.ParseInt(context.Param("post_id"), 10, 32)
 	if err != nil {
-		panic(errors.New("Post ID is not valid"))
+		panic(errors.New("post ID is not valid"))
 	}
 	// read data from session
 	session := sessions.Default(context)
@@ -56,8 +56,6 @@ func (server *Server) GetComments(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, comments)
-	return
-
 }
 
 // CreateComment inserts a user into the database
@@ -75,7 +73,7 @@ func (server *Server) CreateComment(context *gin.Context) {
 	userName, ok := session.Get("user").(string)
 
 	if !ok {
-		panic(errors.New("Username Type Assertion failed"))
+		panic(errors.New("username Type Assertion failed"))
 	}
 
 	comment, err := models.NewComment(form.Content, form.PostID, userName)
