@@ -9,7 +9,7 @@ import (
 	"os"
 	"strconv"
 
-	"ginbar/api"
+	"ginbar/fiberapi"
 	"ginbar/mysql/db"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -78,7 +78,7 @@ func main() {
 	* and Connections
 	 */
 
-	server, err := api.NewFiber(store)
+	server, err := fiberapi.NewFiber(store)
 	if err != nil {
 		log.Fatal("Can't create server", err)
 	}

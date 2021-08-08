@@ -285,7 +285,20 @@ func (server *Server) GetAll(context *gin.Context) {
 	var posts *[]models.PostJSON
 	var err error
 
-	posts, err = models.GetPosts(server.store, context)
+	// Parse HTML Queries
+	queries := &models.PostsQueries{}
+	err = context.Bind(queries)
+
+	if err != nil {
+		context.Error(err)
+		context.Status(http.StatusInternalServerError)
+		return
+	}
+
+	getPostsParams := new(models.GetPostsParams)
+	getPostsParams.SetFromQuery(queries)
+
+	posts, err = models.GetPosts(server.store, *getPostsParams, context)
 
 	if err != nil {
 		context.Error(err)
