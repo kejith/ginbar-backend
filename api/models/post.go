@@ -172,12 +172,6 @@ func GetVotedPosts(store db.Store, context *gin.Context, params db.GetVotedPosts
 // 	return &postsJSON, nil
 // }
 
-type PostsQueries struct {
-	MinimumID   string `query:"lowestID" form:"lowestID"`
-	MaximumID   string `query:"highestID" form:"highestID"`
-	PostsPerRow string `query:"postsPerRow" form:"postsPerRow"`
-}
-
 type GetPostsParams struct {
 	MinimumID   int32
 	MaximumID   int32

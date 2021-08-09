@@ -182,7 +182,6 @@ func (server *Server) Login(context *gin.Context) {
 
 	// Write Session Information
 	session := sessions.Default(context)
-	fmt.Println("user")
 	session.Set("user", user.Name)
 	session.Set("userid", user.ID)
 	session.Set("userlevel", user.Level)

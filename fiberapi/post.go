@@ -28,3 +28,14 @@ func (server *FiberServer) GetPosts(c *fiber.Ctx) error {
 
 	return c.JSON(api.PostsJson{Posts: posts})
 }
+
+// GetPost retrieves a singöe Post from the Database
+func (server *FiberServer) GetPost(c *fiber.Ctx) error {
+	// Parse HTML Queries
+	queries := &models.PostQueries{}
+	if err := c.QueryParser(queries); err != nil {
+		return err
+	}
+
+	return nil
+}

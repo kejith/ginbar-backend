@@ -41,7 +41,20 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	// }))
 
 	// Register Dynamic Routes
-	server.App.Get("/api/post/*", server.GetPosts)
+
+	// Register Groups
+	api := server.App.Group("/api")
+	userApi := api.Group("/user")
+
+	// User
+	userApi.Get("/:id", server.GetUser)
+	userApi.Get("/*", server.GetUsers)
+	userApi.Post("/login", server.Login)
+	userApi.Get("/logout", server.Logout)
+	api.Get("/check", server.Me)
+
+	// Post
+	api.Get("/post/*", server.GetPosts)
 
 	// Register Static Routes
 	server.App.Static("/", "./public")
