@@ -8,7 +8,6 @@ import (
 	"log"
 
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cache"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/session"
 )
@@ -34,8 +33,7 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	}
 
 	// Register Middlewars
-	server.App.Use(cache.New())
-	server.App.Use(logger.New())
+	//server.App.Use(cache.New())
 	// server.App.Use(compress.New(compress.Config{
 	// 	Level: compress.LevelBestCompression, // 2
 	// }))
@@ -45,15 +43,16 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	// Register Groups
 	api := server.App.Group("/api")
 	userApi := api.Group("/user")
-
+	api.Use(logger.New())
 	// User
 	userApi.Get("/:id", server.GetUser)
 	userApi.Get("/*", server.GetUsers)
 	userApi.Post("/login", server.Login)
-	userApi.Get("/logout", server.Logout)
-	api.Get("/check", server.Me)
+	userApi.Post("/logout", server.Logout)
+	api.Get("/check/me", server.Me)
 
 	// Post
+	api.Get("/post/:post_id", server.GetPost)
 	api.Get("/post/*", server.GetPosts)
 
 	// Register Static Routes

@@ -193,7 +193,12 @@ func (p *GetPostsParams) SetFromQuery(pq *PostsQueries) {
 func GetPosts(store db.Store, params GetPostsParams, c context.Context) (*[]PostJSON, error) {
 	var posts []db.Post
 	var err error
-	if params.MaximumID != 0 {
+
+	if params.PostsPerRow == 0 {
+		params.PostsPerRow = 12
+	}
+
+	if params.MinimumID != 0 {
 		params := db.GetOlderPostsParams{
 			ID:        params.MinimumID,
 			UserLevel: params.UserLevel,

@@ -109,10 +109,15 @@ func (server *FiberServer) Login(c *fiber.Ctx) error {
 	}
 
 	session.Set("user", user.Name)
-	session.Set("userID", user.ID)
-	session.Set("userlevel", user.Level)
+	session.Set("userID", fmt.Sprintf("%v", user.ID))
+	session.Set("userlevel", fmt.Sprintf("%v", user.Level))
+	err = session.Save()
 
-	return session.Save()
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(userJSON)
 }
 
 func (server *FiberServer) Logout(c *fiber.Ctx) error {
@@ -123,7 +128,7 @@ func (server *FiberServer) Logout(c *fiber.Ctx) error {
 
 	// Todo: look into probably redundant code
 	session.Set("user", "")     // this
-	session.Set("userid", 0)    // this
+	session.Set("userID", 0)    // this
 	session.Set("userlevel", 0) // this
 
 	return session.Destroy()
@@ -149,4 +154,32 @@ func (server *FiberServer) Me(c *fiber.Ctx) error {
 	} else {
 		return c.Status(http.StatusUnauthorized).SendString("Unauthorized")
 	}
+}
+
+type SessionUser struct {
+	Name  string
+	ID    int32
+	Level int32
+}
+
+func (server *FiberServer) GetUserFromSession(c *fiber.Ctx) (*SessionUser, error) {
+	session, err := server.Sessions.Get(c)
+	if err != nil {
+		return nil, err
+	}
+
+	strUserName, _ := session.Get("user").(string)
+	strUserID, _ := session.Get("userID").(string)
+	strLevel, _ := session.Get("userlevel").(string)
+
+	userID, _ := strconv.ParseInt(strUserID, 10, 64)
+	userLevel, _ := strconv.ParseInt(strLevel, 10, 64)
+
+	user := &SessionUser{
+		Name:  strUserName,
+		ID:    int32(userID),
+		Level: int32(userLevel),
+	}
+
+	return user, nil
 }
