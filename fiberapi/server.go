@@ -73,6 +73,11 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 
 	// API/POST
 	postapi := api.Group("/post")
+	// postapi.Use(cache.New(cache.Config{
+	// 	KeyGenerator: func(c *fiber.Ctx) string {
+	// 		return c.OriginalURL()
+	// 	},
+	// }))
 	postapi.Get("/:post_id", server.GetPost)
 	postapi.Get("/*", server.GetPosts)
 	postapi.Post("/vote", server.VotePost)
