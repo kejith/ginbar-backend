@@ -3,9 +3,9 @@ package fiberapi
 import (
 	"errors"
 	"fmt"
-	"ginbar/api/models"
-	"ginbar/api/utils"
+	"ginbar/models"
 	"ginbar/mysql/db"
+	"ginbar/utils"
 	"net/http"
 	"strconv"
 

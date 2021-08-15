@@ -5,6 +5,8 @@ import (
 	"ginbar/mysql/db"
 	"ginbar/utils"
 	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -19,8 +21,26 @@ type FiberServer struct {
 	directories utils.Directories
 }
 
+func SetupDirectories() utils.Directories {
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	directories := utils.Directories{
+		CWD:       cwd,
+		Image:     filepath.Join(cwd, "public", "images"),
+		Thumbnail: filepath.Join("public", "images", "thumbnails"),
+		Video:     filepath.Join(cwd, "public", "videos"),
+		Tmp:       filepath.Join(cwd, "tmp"),
+		Upload:    filepath.Join(cwd, "public", "upload"),
+	}
+
+	return directories
+}
+
 func NewFiber(store db.Store) (*FiberServer, error) {
-	directories := api.SetupDirectories()
+	directories := SetupDirectories()
 
 	s := session.New()
 

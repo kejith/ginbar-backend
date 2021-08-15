@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"ginbar/api/models"
+	"ginbar/models"
 	"ginbar/mysql/db"
 
 	"github.com/gofiber/fiber/v2"
