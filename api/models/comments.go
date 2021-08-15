@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
@@ -34,7 +35,7 @@ func NewComment(content string, postID int32, userName string) (comment *Comment
 	}
 
 	if content == "" {
-		return nil, errors.New("Comment is empty")
+		return nil, errors.New("comment is empty")
 	}
 
 	comment = &CommentJSON{
@@ -47,7 +48,7 @@ func NewComment(content string, postID int32, userName string) (comment *Comment
 }
 
 // Save ...
-func (c *CommentJSON) Save(store *db.Store, context *gin.Context) (err error) {
+func (c *CommentJSON) Save(store *db.Store, context context.Context) (err error) {
 	params := db.CreateCommentParams{
 		Content:  c.Content,
 		UserName: c.Username,

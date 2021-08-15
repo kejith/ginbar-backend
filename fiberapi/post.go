@@ -265,10 +265,12 @@ func (server *FiberServer) CreatePost(c *fiber.Ctx) error {
 func (server *FiberServer) UploadPost(c *fiber.Ctx) error {
 	user, err := server.GetUserFromSession(c)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	_ = user
+	if user.ID <= 0 {
+		return fmt.Errorf("upload post: user data could not be loaded from session")
+	}
 
 	// parse uploaded file from form
 	file, err := c.FormFile("file")
