@@ -2,7 +2,6 @@ package fiberapi
 
 import (
 	"fmt"
-	"ginbar/ginapi"
 	"ginbar/models"
 	"ginbar/mysql/db"
 	"ginbar/utils"
@@ -43,7 +42,7 @@ func (server *FiberServer) GetPosts(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(ginapi.PostsJson{Posts: posts})
+	return c.JSON(fiber.Map{"posts": posts})
 }
 
 // GetPost retrieves a single Post from the Database
