@@ -236,7 +236,7 @@ func GetPosts(store db.Store, params GetPostsParams, c context.Context) (*[]Post
 }
 
 // GetDuplicatePosts retrieves Duplicate Posts from the Storage with a hash
-func GetDuplicatePosts(store db.Store, context *gin.Context, hash *goimagehash.ExtImageHash) ([]db.GetPossibleDuplicatePostsRow, error) {
+func GetDuplicatePosts(store db.Store, context context.Context, hash *goimagehash.ExtImageHash) ([]db.GetPossibleDuplicatePostsRow, error) {
 	params := db.GetPossibleDuplicatePostsParams{
 		Column1: hash.GetHash()[0],
 		Column2: hash.GetHash()[1],

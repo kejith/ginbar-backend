@@ -42,9 +42,9 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 
 	// Register Groups
 	api := server.App.Group("/api")
-	userApi := api.Group("/user")
 	api.Use(logger.New())
 	// User
+	userApi := api.Group("/user")
 	userApi.Get("/:id", server.GetUser)
 	userApi.Get("/*", server.GetUsers)
 	userApi.Post("/login", server.Login)
@@ -52,8 +52,12 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	api.Get("/check/me", server.Me)
 
 	// Post
-	api.Get("/post/:post_id", server.GetPost)
-	api.Get("/post/*", server.GetPosts)
+	postapi := api.Group("/post")
+	postapi.Get("/:post_id", server.GetPost)
+	postapi.Get("/*", server.GetPosts)
+	postapi.Post("/vote", server.VotePost)
+	postapi.Post("/create", server.CreatePost)
+	postapi.Post("/upload", server.UploadPost)
 
 	// Register Static Routes
 	server.App.Static("/", "./public")
