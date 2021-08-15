@@ -1,4 +1,4 @@
-package api
+package ginapi
 
 import (
 	"errors"
@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"ginbar/api/models"
-	"ginbar/api/utils"
+	"ginbar/models"
 	"ginbar/mysql/db"
+	"ginbar/utils"
 
 	"github.com/gin-gonic/contrib/sessions"
 	"github.com/gin-gonic/gin"

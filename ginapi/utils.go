@@ -1,4 +1,4 @@
-package api
+package ginapi
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"ginbar/api/utils"
 	"ginbar/mysql/db"
+	"ginbar/utils"
 
 	"github.com/corona10/goimagehash"
 	"github.com/gin-gonic/gin"

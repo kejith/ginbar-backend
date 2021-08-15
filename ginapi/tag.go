@@ -1,11 +1,11 @@
-package api
+package ginapi
 
 import (
 	"errors"
 	"fmt"
 	"net/http"
 
-	"ginbar/api/models"
+	"ginbar/models"
 	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache"

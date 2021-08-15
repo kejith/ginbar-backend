@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"ginbar/api/models"
+	"ginbar/models"
 	"ginbar/mysql/db"
 
 	"github.com/gofiber/fiber/v2"

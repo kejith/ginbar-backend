@@ -1,4 +1,4 @@
-package api
+package ginapi
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"ginbar/api/models"
+	"ginbar/models"
 	"ginbar/mysql/db"
 
 	"github.com/gin-contrib/cache"

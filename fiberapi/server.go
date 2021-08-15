@@ -2,9 +2,8 @@ package fiberapi
 
 import (
 	"crypto/tls"
-	"ginbar/api"
-	"ginbar/api/utils"
 	"ginbar/mysql/db"
+	"ginbar/utils"
 	"log"
 
 	"github.com/gofiber/fiber/v2"

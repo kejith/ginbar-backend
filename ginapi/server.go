@@ -1,4 +1,4 @@
-package api
+package ginapi
 
 import (
 	"net/http"
@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"ginbar/api/models"
-	"ginbar/api/utils"
+	"ginbar/models"
 	"ginbar/mysql/db"
+	"ginbar/utils"
 
 	"github.com/gin-contrib/cache"
 	"github.com/gin-contrib/cache/persistence"

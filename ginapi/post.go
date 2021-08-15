@@ -1,4 +1,4 @@
-package api
+package ginapi
 
 import (
 	"errors"
@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"ginbar/api/models"
-	"ginbar/api/utils"
+	"ginbar/models"
 	"ginbar/mysql/db"
+	"ginbar/utils"
 
 	"github.com/gin-contrib/cache"
 	"github.com/gin-gonic/contrib/sessions"
