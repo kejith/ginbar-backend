@@ -4,12 +4,24 @@ import (
 	"errors"
 	"fmt"
 	"ginbar/api/models"
+	"ginbar/api/utils"
+	"ginbar/mysql/db"
 	"net/http"
 	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// --------------------
+// Structs
+// --------------------
+
+type SessionUser struct {
+	Name  string
+	ID    int32
+	Level int32
+}
 
 // --------------------
 // FORMS
@@ -156,10 +168,46 @@ func (server *FiberServer) Me(c *fiber.Ctx) error {
 	}
 }
 
-type SessionUser struct {
-	Name  string
-	ID    int32
-	Level int32
+func (server *FiberServer) CreateUser(c *fiber.Ctx) error {
+	// Parse HTML Queries
+	form := new(userRegisterForm)
+	if err := c.BodyParser(form); err != nil {
+		return err
+	}
+
+	// Get Session Information
+	user, err := server.GetUserFromSession(c)
+	if err != nil {
+		return err
+	}
+
+	if user.ID <= 0 {
+		return fmt.Errorf("upload post: user data could not be loaded from session [userid]")
+	}
+
+	// Hash Password
+	hash, err := utils.CreatePasswordHash([]byte(form.Password))
+	if err != nil {
+		return err
+	}
+
+	createParams := db.CreateUserParams{
+		Name:     form.Name,
+		Email:    form.Email,
+		Password: hash,
+	}
+
+	if len(createParams.Name) < 4 || !utils.IsEmailValid(createParams.Email) {
+		return errors.New("username or Email not valid")
+	}
+
+	// Insert User
+	err = server.store.CreateUser(c.Context(), createParams)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (server *FiberServer) GetUserFromSession(c *fiber.Ctx) (*SessionUser, error) {
