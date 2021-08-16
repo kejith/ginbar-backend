@@ -3,6 +3,8 @@
 - ~~rebase to Fiber (fasthttp)~~
 - ~~make sessions permanent~~
 - caching
+  - [database caching](https://redis.io/documentation)
+  - HTTP Response Caching
 - refactor utilities to generalize them
 - using generics for models and build a general API for models
 - generics for posts
