@@ -1,7 +1,7 @@
 # ginbar-backend
 ## To-Dos 
 - ~~rebase to Fiber (fasthttp)~~
-- make sessions permanent
+- ~~make sessions permanent~~
 - caching
 - refactor utilities to generalize them
 - using generics for models and build a general API for models

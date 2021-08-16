@@ -16,6 +16,7 @@ require (
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gofiber/fiber v1.14.6
 	github.com/gofiber/fiber/v2 v2.16.0
+	github.com/gofiber/storage/sqlite3 v0.0.0-20210602124502-f0233feaea00 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/harukasan/go-libwebp v0.0.0-20190703060927-68562c9c99af

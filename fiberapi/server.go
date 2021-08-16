@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/session"
+	"github.com/gofiber/storage/sqlite3"
 )
 
 // Server serves HTTP requests and Stores Connections, Sessions and State
@@ -42,7 +43,13 @@ func SetupDirectories() utils.Directories {
 func NewFiber(store db.Store) (*FiberServer, error) {
 	directories := SetupDirectories()
 
-	s := session.New()
+	// sqlite3 storage for permanent Sessions
+	storage := sqlite3.New(sqlite3.Config{
+		Database: "./sessions.sqlite3",
+	})
+	s := session.New(session.Config{
+		Storage: storage,
+	})
 
 	server := &FiberServer{
 		App:         fiber.New(),
