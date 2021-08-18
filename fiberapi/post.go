@@ -45,6 +45,18 @@ func (server *FiberServer) GetPosts(c *fiber.Ctx) error {
 	return c.JSON(fiber.Map{"posts": posts})
 }
 
+func (server *FiberServer) Search(c *fiber.Ctx) error {
+	searchQuery := c.Params("query")
+	tags := strings.Split(searchQuery, "%20")
+
+	posts, err := server.store.Search(c.Context(), tags)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(fiber.Map{"posts": posts})
+}
+
 // GetPost retrieves a single Post from the Database
 func (server *FiberServer) GetPost(c *fiber.Ctx) error {
 	// parse Parameter

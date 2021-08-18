@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/session"
 	"github.com/gofiber/storage/sqlite3"
@@ -70,6 +71,12 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	api := server.App.Group("/api")
 	api.Use(logger.New())
 
+	api.Use(cors.New(cors.Config{
+		AllowOrigins:     "*",
+		AllowHeaders:     "Origin, Content-Type, Accept",
+		AllowCredentials: true,
+	}))
+
 	// API/USER
 	userApi := api.Group("/user")
 	userApi.Get("/:id", server.GetUser)
@@ -85,6 +92,9 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	// 		return c.OriginalURL()
 	// 	},
 	// }))
+
+	postapi.Get("/search/", server.GetPosts)
+	postapi.Get("/search/:query", server.Search)
 	postapi.Get("/:post_id", server.GetPost)
 	postapi.Get("/*", server.GetPosts)
 	postapi.Post("/vote", server.VotePost)

@@ -49,6 +49,7 @@ type Querier interface {
 	GetVotedPost(ctx context.Context, arg GetVotedPostParams) (GetVotedPostRow, error)
 	GetVotedPosts(ctx context.Context, arg GetVotedPostsParams) ([]GetVotedPostsRow, error)
 	RemoveTagFromPost(ctx context.Context) error
+	Search(ctx context.Context, name []string) ([]Post, error)
 	UpdateCommentVote(ctx context.Context, arg UpdateCommentVoteParams) error
 	UpdatePostFiles(ctx context.Context, arg UpdatePostFilesParams) error
 	UpdatePostHashes(ctx context.Context, arg UpdatePostHashesParams) error

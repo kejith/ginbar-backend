@@ -6,6 +6,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 )
 
@@ -655,6 +656,82 @@ func (q *Queries) GetVotedPosts(ctx context.Context, arg GetVotedPostsParams) ([
 			&i.PHash3,
 			&i.UserName,
 			&i.Upvoted,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const search = `-- name: Search :many
+SELECT 
+	p.id, p.created_at, p.updated_at, p.deleted_at, p.url, p.uploaded_filename, p.filename, p.thumbnail_filename, p.content_type, p.score, p.user_level, p.p_hash_0, p.p_hash_1, p.p_hash_2, p.p_hash_3, p.user_name 
+FROM 
+	posts p
+LEFT JOIN 
+	post_tags pt 
+ON
+	p.id = pt.post_id
+LEFT JOIN
+	tags t
+ON
+	pt.tag_id = t.id
+WHERE
+	t.name in (%s)
+`
+
+func (q *Queries) Search(ctx context.Context, names []string) ([]Post, error) {
+	// creates a list string from string slice
+	// format: "item1", "item2", ... , "lastItem"
+	tagListStr := ""
+	for index, tag := range names {
+		// add tag to list string and put " " around it
+		tagListStr = fmt.Sprintf("%s '%s',", tagListStr, tag)
+
+		// remove last character which should be a ,
+		if index == len(names)-1 {
+			length := len(tagListStr)
+			if length > 0 && tagListStr[length-1] == ',' {
+				// create copy of string without last character
+				tagListStr = tagListStr[:length-1]
+			}
+		}
+	}
+
+	// replace ? in query with tragListStr
+	searchReplaced := fmt.Sprintf(search, tagListStr)
+	rows, err := q.db.QueryContext(ctx, searchReplaced)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []Post{}
+	for rows.Next() {
+		var i Post
+		if err := rows.Scan(
+			&i.ID,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.DeletedAt,
+			&i.Url,
+			&i.UploadedFilename,
+			&i.Filename,
+			&i.ThumbnailFilename,
+			&i.ContentType,
+			&i.Score,
+			&i.UserLevel,
+			&i.PHash0,
+			&i.PHash1,
+			&i.PHash2,
+			&i.PHash3,
+			&i.UserName,
 		); err != nil {
 			return nil, err
 		}

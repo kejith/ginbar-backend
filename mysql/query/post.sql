@@ -18,7 +18,23 @@ FROM
 WHERE
 	content_type = "image"
 ORDER BY
-	posts.id DESC;
+	posts.id DESC ;
+
+/* name: Search :many */
+SELECT 
+	p.* 
+FROM 
+	posts p
+LEFT JOIN 
+	post_tags pt 
+ON
+	p.id = pt.post_id
+LEFT JOIN
+	tags t
+ON
+	pt.tag_id = t.id
+WHERE
+	t.name = ?;
 
 
 
