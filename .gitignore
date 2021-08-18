@@ -8,3 +8,4 @@ privkey.pem
 .env
 ginbar
 ginbar
+sessions.sqlite3
