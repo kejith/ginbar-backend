@@ -14,9 +14,9 @@ require (
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-delve/delve v1.7.0 // indirect
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gofiber/fiber v1.14.6
+	github.com/gofiber/fiber v1.14.6 // indirect
 	github.com/gofiber/fiber/v2 v2.16.0
-	github.com/gofiber/storage/sqlite3 v0.0.0-20210602124502-f0233feaea00 // indirect
+	github.com/gofiber/storage/sqlite3 v0.0.0-20210602124502-f0233feaea00
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/harukasan/go-libwebp v0.0.0-20190703060927-68562c9c99af
@@ -29,7 +29,7 @@ require (
 	github.com/muesli/smartcrop v0.3.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 // indirect
 	github.com/nickalie/go-binwrapper v0.0.0-20190114141239-525121d43c84 // indirect
-	github.com/nickalie/go-webpbin v0.0.0-20170427122138-7e79cf5bb01e
+	github.com/nickalie/go-webpbin v0.0.0-20170427122138-7e79cf5bb01e // indirect
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/peterh/liner v1.2.1 // indirect
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
@@ -42,8 +42,8 @@ require (
 	go.starlark.net v0.0.0-20210602144842-1cdb82c9e17a // indirect
 	golang.org/x/arch v0.0.0-20210727222714-28578f966459 // indirect
 	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
-	golang.org/x/image v0.0.0-20201208152932-35266b937fa6
+	golang.org/x/image v0.0.0-20201208152932-35266b937fa6 // indirect
 	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
-	gopkg.in/gographics/imagick.v2 v2.6.0
+	gopkg.in/gographics/imagick.v2 v2.6.0 // indirect
 )
