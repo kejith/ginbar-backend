@@ -12,6 +12,8 @@ import (
 	"ginbar/fiberapi"
 	"ginbar/mysql/db"
 
+	"encoding/json"
+
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 )
@@ -65,6 +67,14 @@ func init() {
 	if err != nil {
 		log.Fatal("Can't connect to mysql", err)
 	}
+
+	dbStatsJSON, err := json.Marshal(dbConnection.Stats())
+	if err != nil {
+		log.Fatalf("could not convert sql.dbStats to json: %v", err)
+	}
+
+	// Settings
+	fmt.Printf("%s", string(dbStatsJSON))
 }
 
 func main() {

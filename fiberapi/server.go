@@ -83,6 +83,7 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	userApi.Get("/*", server.GetUsers)
 	userApi.Post("/login", server.Login)
 	userApi.Post("/logout", server.Logout)
+	userApi.Post("/create", server.CreateUser)
 	api.Get("/check/me", server.Me)
 
 	// API/POST

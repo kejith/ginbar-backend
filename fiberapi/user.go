@@ -181,8 +181,8 @@ func (server *FiberServer) CreateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	if user.ID <= 0 {
-		return fmt.Errorf("upload post: user data could not be loaded from session [userid]")
+	if user.ID > 0 {
+		return fmt.Errorf("create user: user is already logged in")
 	}
 
 	// Hash Password
