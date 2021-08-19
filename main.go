@@ -18,7 +18,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
+//var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
 
 // DatabaseConfig is a struct to hold data to open a Database connection
 type DatabaseConfig struct {
