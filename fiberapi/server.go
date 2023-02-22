@@ -1,7 +1,6 @@
 package fiberapi
 
 import (
-	"crypto/tls"
 	"ginbar/mysql/db"
 	"ginbar/utils"
 	"log"
@@ -117,21 +116,26 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	server.App.Static("/", "./public")
 	server.App.Static("*", "./public/index.html")
 
-	// Create TLS Certificate
-	cer, err := tls.LoadX509KeyPair("fullchain.pem", "privkey.pem")
-	if err != nil {
-		log.Fatal(err)
-	}
+	// // Create TLS Certificate
+	// cer, err := tls.LoadX509KeyPair(
+	// 	filepath.Join(directories.CWD, "fullchain.pem"), 
+	// 	filepath.Join(directories.CWD, "privkey.pem"),
+	// )
+	
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cer}}
+	// tlsConfig := &tls.Config{Certificates: []tls.Certificate{cer}}
 
-	// Create SSL Listener
-	ln, err := tls.Listen("tcp", ":443", tlsConfig)
-	if err != nil {
-		panic(err)
-	}
+	// // Create SSL Listener
+	// ln, err := tls.Listen("tcp", ":443", tlsConfig)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	log.Fatal(server.App.Listener(ln))
+	// log.Fatal(server.App.Listener(ln))
+	log.Fatal(server.App.Listen(":3000"))
 
 	return server, nil
 }

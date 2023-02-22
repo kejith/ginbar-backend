@@ -77,7 +77,7 @@ func NewServer(store db.Store) (*Server, error) {
 	// Middleware
 
 	server.router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://kejith.de", "http://kejith.de:3000"},
+		AllowOrigins:     []string{"https://kejith.de", "http://kejith.de:3000", "https://ginbar.kejith.de"},
 		AllowMethods:     []string{"POST", "GET"},
 		AllowHeaders:     []string{"Origin"},
 		ExposeHeaders:    []string{"Content-Length"},

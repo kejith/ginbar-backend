@@ -9,3 +9,4 @@ privkey.pem
 ginbar
 ginbar
 sessions.sqlite3
+vendor/

@@ -48,17 +48,19 @@ func init() {
 	dbConfig = DatabaseConfig{
 		Driver:       os.Getenv("DB_DRIVER"),
 		User:         os.Getenv("DB_USER"),
-		Password:     os.Getenv("DB_PASSWORD"),
+		Password:     os.Getenv("MYSQL_PASSWORD"),
 		Port:         port,
 		Host:         os.Getenv("DB_HOST"),
-		DatabaseName: os.Getenv("DB_NAME"),
+		DatabaseName: os.Getenv("MYSQL_DATABASE"),
 	}
 
 	// Create DSN String for Opening a Connection to the Database
 	dsn := fmt.Sprintf(
-		"%s:%s@/%s?parseTime=true",
+		"%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		dbConfig.User,
 		dbConfig.Password,
+		dbConfig.Host,
+		os.Getenv("DB_PORT"),
 		dbConfig.DatabaseName,
 	)
 
