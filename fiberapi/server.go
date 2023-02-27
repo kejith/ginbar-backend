@@ -58,6 +58,9 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 		Sessions:    s,
 	}
 
+	// Register the error handler middleware
+	
+
 	// Register Middlewars
 	//server.App.Use(cache.New())
 	// server.App.Use(compress.New(compress.Config{
@@ -69,6 +72,7 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	// Register Groups
 	api := server.App.Group("/api")
 	api.Use(logger.New())
+	api.Use(ErrorHandler)
 
 	api.Use(cors.New(cors.Config{
 		AllowOrigins:     "*",
@@ -138,4 +142,20 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 	log.Fatal(server.App.Listen(":3000"))
 
 	return server, nil
+}
+
+func ErrorHandler(ctx *fiber.Ctx) error {
+    defer func() {
+        if err := recover(); err != nil {
+            log.Printf("Error: %v", err)
+
+            // Send a response to the client
+            resp := fiber.Map{"error": "Internal Server Error"}
+            if err := ctx.Status(fiber.StatusInternalServerError).JSON(resp); err != nil {
+                ctx.Status(fiber.StatusInternalServerError)
+            }
+        }
+    }()
+
+    return ctx.Next()
 }

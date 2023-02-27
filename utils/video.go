@@ -20,10 +20,12 @@ func ProcessVideo(inputFilePath, format string, dirs Directories) (fileName stri
 	dstFileName := GenerateFilename(ext)
 	dst := filepath.Join(dirs.Video, dstFileName)
 
-	// move Video from tmp to public
-	if err = os.Rename(inputFilePath, dst); err != nil {
-		return "", "", fmt.Errorf("could not move Video from TMP Dir to Video Dir: %w", err)
-	}
+    // move Video from tmp to public
+    cmd := exec.Command("mv", inputFilePath, dst)
+    if err = cmd.Run(); err != nil {
+        return "", "", fmt.Errorf("could not move Video from TMP Dir to Video Dir: %w", err)
+    }
+
 
 	thumbnailFilename = dstFileName[0:len(dstFileName)-len(ext)]
 	// create Thumbnail
