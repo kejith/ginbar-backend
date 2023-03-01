@@ -20,7 +20,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/harukasan/go-libwebp v0.0.0-20220408054828-61eedf90d768
-	github.com/joho/godotenv v1.3.0
+	// github.com/joho/godotenv v1.3.0
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.13 // indirect

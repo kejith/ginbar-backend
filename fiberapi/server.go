@@ -80,6 +80,12 @@ func NewFiber(store db.Store) (*FiberServer, error) {
 		AllowCredentials: true,
 	}))
 
+
+	// api.Get("/regenerate/thumbnails", server.RegenerateThumbnails)
+	// api.Get("/regenerate/hashes", server.RecalculateHashes)
+	// api.Get("/reprocess/urls", server.RedownloadAndCompressImages)
+	// api.Get("/check/urls", server.CheckIfExternalMediaIsAvailable)
+
 	// API/USER
 	userApi := api.Group("/user")
 	userApi.Get("/:id", server.GetUser)

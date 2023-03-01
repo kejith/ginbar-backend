@@ -9,13 +9,13 @@ import (
 	"os"
 	"strconv"
 
+	// "ginbar/fiberapi"
 	"ginbar/fiberapi"
 	"ginbar/mysql/db"
 
 	"encoding/json"
 
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/joho/godotenv"
 )
 
 //var secret = "IX~|xTE@4*v@e95sLll4g`#6G288be"
@@ -34,24 +34,24 @@ var dbConfig DatabaseConfig
 var dbConnection *sql.DB
 
 func init() {
-	// Load Configs from .env File
-	if err := godotenv.Load(); err != nil {
-		panic(err)
-	}
+	// // Load Configs from .env File
+	// if err := godotenv.Load(); err != nil {
+	// 	panic(err)
+	// }
 
 	// Database Config
 	port, err := strconv.Atoi(os.Getenv("DB_PORT"))
 	if err != nil {
 		panic(err)
 	}
-
+	
 	dbConfig = DatabaseConfig{
 		Driver:       os.Getenv("DB_DRIVER"),
 		User:         os.Getenv("DB_USER"),
-		Password:     os.Getenv("MYSQL_PASSWORD"),
+		Password:     os.Getenv("DB_PASSWORD"),
 		Port:         port,
 		Host:         os.Getenv("DB_HOST"),
-		DatabaseName: os.Getenv("MYSQL_DATABASE"),
+		DatabaseName: os.Getenv("DB_NAME"),
 	}
 
 	// Create DSN String for Opening a Connection to the Database
@@ -97,12 +97,12 @@ func main() {
 	_ = server
 
 	// Start Server
-	// server, err := api.NewServer(store)
+	// server, err := ginapi.NewServer(store)
 	// if err != nil {
 	// 	log.Fatal("Can't create server", err)
 	// }
 	// _ = server
-	// err = server.Start(":8080")
+	// err = server.Start(":3000")
 	// if err != nil {
 	// 	log.Fatal("Can't start server", err)
 	// }

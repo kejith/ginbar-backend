@@ -201,8 +201,9 @@ func AuthenticationRequired() gin.HandlerFunc {
 
 // Start runs the HTTP server on a specific address.
 func (server *Server) Start(address string) error {
-	//return server.router.Run(address)
-	return server.router.RunTLS(":443", "./fullchain.pem", "./privkey.pem")
+	return server.router.Run(address)
+	// return server.router.RunTLS(":443", "./fullchain.pem", "./privkey.pem")
+
 }
 
 // func errorResponse(err error) gin.H {

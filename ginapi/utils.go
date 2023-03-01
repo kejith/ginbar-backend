@@ -96,7 +96,7 @@ func (server *Server) RedownloadAndCompressImages(context *gin.Context) {
 			)
 
 			if err != nil {
-				//fmt.Println(err)
+				fmt.Println(err)
 				continue
 			}
 
@@ -127,6 +127,7 @@ func (server *Server) CheckIfExternalMediaIsAvailable(context *gin.Context) {
 		response, err := http.Get(post.Url)
 		if err != nil {
 			fmt.Println("url bad")
+			continue
 		}
 
 		if response.StatusCode == 404 {
