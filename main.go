@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-
 	// "ginbar/fiberapi"
 	"ginbar/fiberapi"
 	"ginbar/mysql/db"
@@ -32,6 +31,7 @@ type DatabaseConfig struct {
 
 var dbConfig DatabaseConfig
 var dbConnection *sql.DB
+
 
 func init() {
 	// // Load Configs from .env File
